@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test</title>
+<script src="twilio.js"></script>
+<script>
+
+let device;
+let call;
+let hangupEl;
+let connectEl;
+
+async function connect(recipient) {
+  showButton('hangup');
+
+  if (!device) {
+    device = new Twilio.Device(await getToken('alice'));
+  }
+  call = await device.connect({ params: { recipient } });
+  call.on('disconnect', () => showButton('connect'));
+}
+
+function hangup() {
+  showButton('connect')
+  call.disconnect();
+}
+
+function getToken(identity) {
+  return new Promise(resolve => {
+    const xmlhttp = new XMLHttpRequest();
+    xmlhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        resolve(JSON.parse(this.responseText).token);
+      }
+    };
+    xmlhttp.open('GET', '/token?identity=' + identity, true);
+    xmlhttp.send();
+  });
+}
+
+function showButton(id) {
+  if (id === hangupEl.id) {
+    connectEl.style.display = 'none';
+    hangupEl.style.display = 'inline-block';
+  } else if (id === connectEl.id) {
+    connectEl.style.display = 'inline-block';
+    hangupEl.style.display = 'none';
+  }
+}
+
+addEventListener('load', async () => {
+  connectEl = document.querySelector('#connect')
+  connectEl.onclick = () => {
+    connect(document.querySelector('#recipient').value);
+  };
+
+  hangupEl = document.querySelector('#hangup');
+  hangupEl.onclick = () => hangup();
+
+  showButton('connect');
+});
+</script>
+</head>
+<body>
+  <input type="text" id="recipient" value="csantos"/>
+  <button id="connect">connect</button>
+  <button id="hangup">hangup</button>
+</body>
+</html>
