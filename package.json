@@ -1,0 +1,12 @@
+{
+  "name": "twilio-voice-js-reference-components",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "source .env && node src/server.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "express": "4.19.2",
+    "twilio": "5.2.2"
+  }
+}
