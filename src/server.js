@@ -12,8 +12,8 @@ const VoiceResponse = Twilio.twiml.VoiceResponse;
 
 const app = express();
 const server = http.createServer(app);
-const { port, appSid, accountSid, apiKey, apiSecret, callerId } = config;
-const client = Twilio(apiKey, apiSecret, { accountSid });
+const { port, appSid, accountSid, apiKeySid, apiKeySecret, callerId } = config;
+const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 const componentsDir = path.join(process.cwd(), 'src/components');
 
 // Serve the public folder of each component
