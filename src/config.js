@@ -7,8 +7,7 @@ const apiKeySecret = process.env.API_KEY_SECRET;
 const callerId = process.env.CALLER_ID;
 
 if (!appSid || !accountSid || !apiKeySid || !apiKeySecret || !callerId) {
-  console.log('Missing environment variables.\n');
-  process.exit();
+  throw new Error('Missing environment variables.');
 }
 
 const config = { port, appSid, accountSid, apiKeySid, apiKeySecret, callerId };
