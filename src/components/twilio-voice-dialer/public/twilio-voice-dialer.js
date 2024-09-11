@@ -28,12 +28,16 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   attributeChangedCallback() {
-    this.shadowRoot.innerHTML = render(this);
+    this.#render();
   }
 
   #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
     this.#setStatus('idle');
+  }
+
+  #render() {
+    this.shadowRoot.innerHTML = render(this);
   }
 
   #setStatus(status) {
