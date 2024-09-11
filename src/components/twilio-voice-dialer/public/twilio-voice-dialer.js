@@ -10,8 +10,8 @@ class TwilioVoiceDialer extends HTMLElement {
     return ['recipient'];
   }
 
-  device;
-  token;
+  #device;
+  #token;
 
   constructor() {
     super();
@@ -24,27 +24,27 @@ class TwilioVoiceDialer extends HTMLElement {
   connectedCallback() {}
 
   disconnectedCallback() {
-    this.device.destroy();
+    this.#device.destroy();
   }
 
   attributeChangedCallback() {
     this.shadowRoot.innerHTML = render(this);
   }
 
-  async handleInit() {
-    this.device = new Twilio.Device(this.token, { logLevel: 1 });
-    this.setStatus('idle');
+  #handleInit() {
+    this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
+    this.#setStatus('idle');
   }
 
-  setStatus(status) {
+  #setStatus(status) {
     const recipientEl = this.shadowRoot.querySelector('#recipient');
     const statusEl = this.shadowRoot.querySelector('#status');
     statusEl.innerText = `Status: ${status}`;
   }
 
   setToken(token) {
-    this.token = token;
-    this.handleInit();
+    this.#token = token;
+    this.#handleInit();
   }
 }
 

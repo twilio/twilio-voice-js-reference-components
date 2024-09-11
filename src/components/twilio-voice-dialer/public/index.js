@@ -5,6 +5,6 @@
   );
   const data = await response.json();
 
-  const TwilioVoiceDialer = document.querySelector('twilio-voice-dialer');
-  TwilioVoiceDialer.setToken(data.token);
+  const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
+  twilioVoiceDialer.setToken(data.token);
 })();
