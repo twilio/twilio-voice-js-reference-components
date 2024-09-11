@@ -47,8 +47,12 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   setToken(token) {
-    this.#token = token;
-    this.#handleInit();
+    if (this.#token) {
+      this.#device.updateToken(token);
+    } else {
+      this.#token = token;
+      this.#handleInit();
+    }
   }
 }
 
