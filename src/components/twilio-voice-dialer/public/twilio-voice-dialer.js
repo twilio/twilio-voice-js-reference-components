@@ -1,10 +1,3 @@
-const render = (x) => `
-  <div class="container">
-    <p id="status">Status: pending</p>
-    <input type="text" placeholder="recipient" id="recipient" value=${x.recipient}>
-  </div>
-`;
-
 class TwilioVoiceDialer extends HTMLElement {
   static get observedAttributes() {
     return ['recipient'];
@@ -17,11 +10,6 @@ class TwilioVoiceDialer extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
   }
-  get recipient() {
-    return this.getAttribute('recipient');
-  }
-
-  connectedCallback() {}
 
   disconnectedCallback() {
     this.#device.destroy();
@@ -37,7 +25,16 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #render() {
-    this.shadowRoot.innerHTML = render(this);
+    this.shadowRoot.innerHTML = `
+      <div class="container">
+        <p id="status">Status: pending</p>
+        <input 
+            type="text"
+            placeholder="recipient"
+            id="recipient"
+            value=${this.getAttribute('recipient')}>
+      </div>
+    `;
   }
 
   #setStatus(status) {
