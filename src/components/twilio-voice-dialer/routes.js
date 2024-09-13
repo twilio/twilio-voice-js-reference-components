@@ -16,7 +16,7 @@ router.get('/token', (req, res) => {
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, { identity, ttl: 3600 });
   const voiceGrant = new VoiceGrant({
     outgoingApplicationSid: appSid,
-    incomingAllow: !!identity,
+    incomingAllow: Boolean(identity),
   });
 
   token.addGrant(voiceGrant);
