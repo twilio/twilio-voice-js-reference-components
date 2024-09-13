@@ -6,7 +6,7 @@
   },
   "type": "module",
   "dependencies": {
-    "express": "4.20.0",
+    "express": "4.21.0",
     "twilio": "5.2.2"
   }
 }
