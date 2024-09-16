@@ -11,12 +11,35 @@ class TwilioVoiceDialer extends HTMLElement {
     this.attachShadow({ mode: 'open' });
   }
 
+  attributeChangedCallback() {
+    this.#render();
+  }
+
+  connectedCallback() {
+    this.shadowRoot
+      .querySelector('#call')
+      .addEventListener('click', () => this.#handleCall());
+    this.shadowRoot
+      .querySelector('#hangup')
+      .addEventListener('click', () => this.#handleHangup());
+  }
+
   disconnectedCallback() {
     this.#device.destroy();
   }
 
-  attributeChangedCallback() {
-    this.#render();
+  async #handleCall() {
+    const recipient = this.shadowRoot.querySelector('#recipient').value;
+    if (recipient) {
+      const call = await this.#device.connect({ params: { recipient } });
+      this.#setupCallHandlers(call);
+      this.#setStatus('inprogress');
+    }
+  }
+
+  #handleHangup() {
+    this.#setStatus('idle');
+    this.#device.disconnectAll();
   }
 
   #handleInit() {
@@ -33,14 +56,37 @@ class TwilioVoiceDialer extends HTMLElement {
             placeholder="recipient"
             id="recipient"
             value=${this.getAttribute('recipient')}>
+				<button id="call">Call</button>
+    		<button id="hangup">Hangup</button>
       </div>
     `;
   }
 
   #setStatus(status) {
-    const recipientEl = this.shadowRoot.querySelector('#recipient');
+    if (status === 'idle') {
+      this.#showButtons('call');
+    } else if (status === 'inprogress') {
+      this.#showButtons('hangup');
+    }
+
     const statusEl = this.shadowRoot.querySelector('#status');
     statusEl.innerText = `Status: ${status}`;
+  }
+
+  #setupCallHandlers(call) {
+    call.on('disconnect', () => {
+      this.#setStatus('idle');
+    });
+  }
+
+  #showButtons(...buttonsToShow) {
+    this.shadowRoot.querySelectorAll('button').forEach((el) => {
+      if (buttonsToShow.includes(el.id)) {
+        el.style.display = 'inline-block';
+      } else {
+        el.style.display = 'none';
+      }
+    });
   }
 
   setToken(token) {
