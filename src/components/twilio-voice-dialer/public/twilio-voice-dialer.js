@@ -41,7 +41,6 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #handleHangup() {
-    this.#setStatus('idle');
     this.#call.disconnect();
   }
 
