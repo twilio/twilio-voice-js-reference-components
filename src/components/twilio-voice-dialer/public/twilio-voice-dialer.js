@@ -59,8 +59,8 @@ class TwilioVoiceDialer extends HTMLElement {
             placeholder="recipient"
             id="recipient"
             value=${this.getAttribute('recipient')}>
-<button id="call">Call</button>
-<button id="hangup">Hangup</button>
+				<button id="call">Call</button>
+				<button id="hangup">Hangup</button>
       </div>
     `;
   }
