@@ -35,17 +35,19 @@ router.post('/twiml', (req, res) => {
 
   // The caller creates the conference
   dial.conference({
+    participantLabel: 'caller',
     maxParticipants: 2,
     startConferenceOnEnter: true,
     endConferenceOnExit: true,
     statusCallback: `${callbackBaseURL}/twilio-voice-dialer/conference-events`,
-    statusCallbackEvent: 'start end join leave mute hold',
+    statusCallbackEvent: 'join',
   }, roomName);
 
   // Add the callee to the conference
   client.conferences(roomName).participants.create({
     from: callerId,
     to: recipient,
+    label: 'callee',
     endConferenceOnExit: true,
   });
 
@@ -55,9 +57,25 @@ router.post('/twiml', (req, res) => {
     .send(twiml.toString());
 });
 
-router.post('/conference-events', (req, res) => {
-  // Handle conference events
-  console.log(req.body);
+router.post('/conference-events', async (req, res) => {
+  const { CallSid, ConferenceSid: conferenceSid, StatusCallbackEvent } = req.body;
+
+  // When the caller joins, send back the conferenceSid to be used
+  // for conference management during the call
+  if (StatusCallbackEvent === 'participant-join') {
+    const participant = await client
+      .conferences(conferenceSid)
+      .participants(CallSid)
+      .fetch();
+
+    if (participant.label === 'caller') {
+      await client
+        .calls(participant.callSid)
+        .userDefinedMessages
+        .create({content: JSON.stringify({ conferenceSid })});
+    }
+  }
+
   res.sendStatus(200);
 });
 
