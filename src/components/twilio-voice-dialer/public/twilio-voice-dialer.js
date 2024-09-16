@@ -3,6 +3,7 @@ class TwilioVoiceDialer extends HTMLElement {
     return ['recipient'];
   }
 
+  #call;
   #device;
   #token;
 
@@ -31,15 +32,17 @@ class TwilioVoiceDialer extends HTMLElement {
   async #handleCall() {
     const recipient = this.shadowRoot.querySelector('#recipient').value;
     if (recipient) {
-      const call = await this.#device.connect({ params: { recipient } });
-      this.#setupCallHandlers(call);
+      this.#call = await this.#device.connect({ params: { recipient } });
+      this.#setupCallHandlers(this.#call);
       this.#setStatus('inprogress');
+    } else {
+      console.log('recipient is required to make a call');
     }
   }
 
   #handleHangup() {
     this.#setStatus('idle');
-    this.#device.disconnectAll();
+    this.#call.disconnect();
   }
 
   #handleInit() {
@@ -57,7 +60,7 @@ class TwilioVoiceDialer extends HTMLElement {
             id="recipient"
             value=${this.getAttribute('recipient')}>
 				<button id="call">Call</button>
-    		<button id="hangup">Hangup</button>
+				<button id="hangup">Hangup</button>
       </div>
     `;
   }
