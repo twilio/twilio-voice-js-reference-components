@@ -9,6 +9,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@twilio/voice-sdk": "2.12.1",
     "express": "4.21.0",
     "twilio": "5.2.2"
   }

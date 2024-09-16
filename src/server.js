@@ -18,6 +18,9 @@ readdirSync(componentsDir, { withFileTypes: true })
     app.use(`/${name}`, (await import(path.join(componentsDir, name, 'routes.js'))).default);
   });
 
+  // Serve the SDK
+app.use('/', express.static(path.join(process.cwd(), 'node_modules/@twilio/voice-sdk/dist')));
+
 app.use(bodyParser.text());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
