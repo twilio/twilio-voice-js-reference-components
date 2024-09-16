@@ -38,7 +38,6 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #setStatus(status) {
-    const recipientEl = this.shadowRoot.querySelector('#recipient');
     const statusEl = this.shadowRoot.querySelector('#status');
     statusEl.innerText = `Status: ${status}`;
   }

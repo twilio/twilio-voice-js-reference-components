@@ -5,11 +5,12 @@ const accountSid = process.env.ACCOUNT_SID;
 const apiKeySid = process.env.API_KEY_SID;
 const apiKeySecret = process.env.API_KEY_SECRET;
 const callerId = process.env.CALLER_ID;
+const callbackBaseURL = process.env.CALLBACK_BASE_URL;
 
-if (!appSid || !accountSid || !apiKeySid || !apiKeySecret || !callerId) {
+if (!appSid || !accountSid || !apiKeySid || !apiKeySecret || !callerId || !callbackBaseURL) {
   throw new Error('Missing environment variables.');
 }
 
-const config = { port, appSid, accountSid, apiKeySid, apiKeySecret, callerId };
+const config = { port, appSid, accountSid, apiKeySid, apiKeySecret, callerId, callbackBaseURL };
 
 export default config;

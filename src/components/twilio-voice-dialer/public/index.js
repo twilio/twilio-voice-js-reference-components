@@ -1,7 +1,6 @@
 (async function () {
-  const identity = '';
-  const response = await fetch(
-    `http://127.0.0.1:3030/token?identity=${identity}`
+  const identity = 'alice';
+  const response = await fetch(`/twilio-voice-dialer/token?identity=${identity}`
   );
   const data = await response.json();
 
