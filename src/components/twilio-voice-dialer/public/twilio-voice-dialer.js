@@ -88,14 +88,15 @@ class TwilioVoiceDialer extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <div class="container">
         <p id="status">Status: pending</p>
-        <p id="register-status">Register: ${Boolean(
-          this.getAttribute('register')
-        )}</p>
+        <p id="register-status">
+          Register: ${Boolean(this.getAttribute('register'))}
+        </p>
         <input 
           type="text"
           placeholder="recipient"
           id="recipient"
-          value=${this.getAttribute('recipient')}>
+          value=${this.getAttribute('recipient')}
+        >
         <div>
           <button id="call">Call</button>
           <button id="hangup">Hangup</button>
