@@ -92,17 +92,17 @@ class TwilioVoiceDialer extends HTMLElement {
           this.getAttribute('register')
         )}</p>
         <input 
-					type="text"
-					placeholder="recipient"
-					id="recipient"
-					value=${this.getAttribute('recipient')}>
-				<div>
-					<button id="call">Call</button>
-					<button id="hangup">Hangup</button>
-					<button id="accept">Accept</button>
-					<button id="reject">Reject</button>
-				</div>
-				<input type="button" id="register" value="Register" />
+          type="text"
+          placeholder="recipient"
+          id="recipient"
+          value=${this.getAttribute('recipient')}>
+        <div>
+          <button id="call">Call</button>
+          <button id="hangup">Hangup</button>
+          <button id="accept">Accept</button>
+          <button id="reject">Reject</button>
+        </div>
+        <input type="button" id="register" value="Register" />
       </div>
     `;
   }
