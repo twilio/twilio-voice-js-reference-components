@@ -1,6 +1,6 @@
 class TwilioVoiceDialer extends HTMLElement {
   static get observedAttributes() {
-    return ['recipient'];
+    return ['recipient', 'register'];
   }
 
   #call;
@@ -14,19 +14,30 @@ class TwilioVoiceDialer extends HTMLElement {
 
   attributeChangedCallback() {
     this.#render();
-  }
-
-  connectedCallback() {
+    this.shadowRoot
+      .querySelector('#accept')
+      .addEventListener('click', () => this.#handleAccept());
     this.shadowRoot
       .querySelector('#call')
       .addEventListener('click', () => this.#handleCall());
     this.shadowRoot
       .querySelector('#hangup')
       .addEventListener('click', () => this.#handleHangup());
+    this.shadowRoot
+      .querySelector('#register')
+      .addEventListener('click', () => this.#handleRegister());
+    this.shadowRoot
+      .querySelector('#reject')
+      .addEventListener('click', () => this.#handleReject());
   }
 
   disconnectedCallback() {
     this.#device.destroy();
+  }
+
+  #handleAccept() {
+    this.#call.accept();
+    this.#setStatus('inprogress');
   }
 
   async #handleCall() {
@@ -44,29 +55,68 @@ class TwilioVoiceDialer extends HTMLElement {
     this.#call.disconnect();
   }
 
-  #handleInit() {
+  async #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
     this.#setStatus('idle');
+
+    if (Boolean(this.getAttribute('register'))) {
+      await this.#handleRegister();
+    }
+  }
+
+  async #handleRegister() {
+    await this.#device.register();
+    this.#device.on('incoming', (call) => {
+      call.on('disconnect', this.#reset.bind(this));
+      call.on('cancel', this.#reset.bind(this));
+      call.on('reject', this.#reset.bind(this));
+      this.#call = call;
+      this.#setStatus('incoming');
+    });
+
+    if (!Boolean(this.getAttribute('register'))) {
+      this.setAttribute('register', 'true');
+      this.#setStatus('idle');
+    }
+  }
+
+  #handleReject() {
+    this.#call.reject();
   }
 
   #render() {
     this.shadowRoot.innerHTML = `
       <div class="container">
         <p id="status">Status: pending</p>
+        <p id="register-status">Register: ${Boolean(
+          this.getAttribute('register')
+        )}</p>
         <input 
-            type="text"
-            placeholder="recipient"
-            id="recipient"
-            value=${this.getAttribute('recipient')}>
-				<button id="call">Call</button>
-				<button id="hangup">Hangup</button>
+					type="text"
+					placeholder="recipient"
+					id="recipient"
+					value=${this.getAttribute('recipient')}>
+				<div>
+					<button id="call">Call</button>
+					<button id="hangup">Hangup</button>
+					<button id="accept">Accept</button>
+					<button id="reject">Reject</button>
+				</div>
+				<input type="button" id="register" value="Register" />
       </div>
     `;
+  }
+
+  #reset() {
+    this.#setStatus('idle');
+    this.#call = null;
   }
 
   #setStatus(status) {
     if (status === 'idle') {
       this.#showButtons('call');
+    } else if (status === 'incoming') {
+      this.#showButtons('accept', 'reject');
     } else if (status === 'inprogress') {
       this.#showButtons('hangup');
     }
