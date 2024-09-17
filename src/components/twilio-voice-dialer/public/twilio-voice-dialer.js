@@ -5,6 +5,7 @@ class TwilioVoiceDialer extends HTMLElement {
 
   #call;
   #device;
+  #isRegistered = false;
   #token;
 
   constructor() {
@@ -12,8 +13,28 @@ class TwilioVoiceDialer extends HTMLElement {
     this.attachShadow({ mode: 'open' });
   }
 
-  attributeChangedCallback() {
+  async attributeChangedCallback(name, oldValue, newValue) {
     this.#render();
+
+    if (name === 'register' && this.#device) {
+      const shouldRegister = newValue === 'true';
+      if (shouldRegister && !this.#isRegistered) {
+        await this.#device.register();
+        this.#isRegistered = true;
+        this.#device.on('incoming', (call) => {
+          call.on('disconnect', this.#reset);
+          call.on('cancel', this.#reset);
+          call.on('reject', this.#reset);
+          this.#call = call;
+          this.#setStatus('incoming');
+        });
+      } else if (!shouldRegister && this.#isRegistered) {
+        this.#device.unregister();
+        this.#isRegistered = false;
+      }
+      this.#setStatus('idle');
+    }
+
     this.shadowRoot
       .querySelector('#accept')
       .addEventListener('click', () => this.#handleAccept());
@@ -59,24 +80,16 @@ class TwilioVoiceDialer extends HTMLElement {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
     this.#setStatus('idle');
 
-    if (Boolean(this.getAttribute('register'))) {
+    if (!this.#isRegistered && this.getAttribute('register') === 'true') {
       await this.#handleRegister();
     }
   }
 
   async #handleRegister() {
-    await this.#device.register();
-    this.#device.on('incoming', (call) => {
-      call.on('disconnect', this.#reset.bind(this));
-      call.on('cancel', this.#reset.bind(this));
-      call.on('reject', this.#reset.bind(this));
-      this.#call = call;
-      this.#setStatus('incoming');
-    });
-
-    if (!Boolean(this.getAttribute('register'))) {
+    if (!this.#isRegistered) {
       this.setAttribute('register', 'true');
-      this.#setStatus('idle');
+    } else {
+      console.log('device is already registered');
     }
   }
 
@@ -89,7 +102,7 @@ class TwilioVoiceDialer extends HTMLElement {
       <div class="container">
         <p id="status">Status: pending</p>
         <p id="register-status">
-          Register: ${Boolean(this.getAttribute('register'))}
+          Register: ${this.getAttribute('register') === 'true'}
         </p>
         <input 
           type="text"
@@ -108,10 +121,10 @@ class TwilioVoiceDialer extends HTMLElement {
     `;
   }
 
-  #reset() {
+  #reset = () => {
     this.#setStatus('idle');
     this.#call = null;
-  }
+  };
 
   #setStatus(status) {
     if (status === 'idle') {
