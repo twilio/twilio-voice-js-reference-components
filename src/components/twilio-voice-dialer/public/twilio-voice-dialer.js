@@ -21,15 +21,10 @@ class TwilioVoiceDialer extends HTMLElement {
       if (shouldRegister && !this.#isRegistered) {
         await this.#device.register();
         this.#isRegistered = true;
-        this.#device.on('incoming', (call) => {
-          call.on('disconnect', this.#reset);
-          call.on('cancel', this.#reset);
-          call.on('reject', this.#reset);
-          this.#call = call;
-          this.#setStatus('incoming');
-        });
+        this.#device.on('incoming', this.#incomingHandler);
       } else if (!shouldRegister && this.#isRegistered) {
         this.#device.unregister();
+        this.#device.removeListener('incoming', this.#incomingHandler);
         this.#isRegistered = false;
       }
       this.#setStatus('idle');
@@ -96,6 +91,14 @@ class TwilioVoiceDialer extends HTMLElement {
   #handleReject() {
     this.#call.reject();
   }
+
+  #incomingHandler = (call) => {
+    call.on('disconnect', this.#reset);
+    call.on('cancel', this.#reset);
+    call.on('reject', this.#reset);
+    this.#call = call;
+    this.#setStatus('incoming');
+  };
 
   #render() {
     this.shadowRoot.innerHTML = `
