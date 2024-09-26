@@ -73,6 +73,9 @@ class TwilioVoiceDialer extends HTMLElement {
 
   async #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
+    this.#device.on('tokenWillExpire', (device) => {
+      this.#onTokenWillExpireEvent(device);
+    });
     this.#setStatus('idle');
 
     if (!this.#isRegistered && this.getAttribute('register') === 'true') {
@@ -93,12 +96,28 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #incomingHandler = (call) => {
+    this.#onIncomingEvent(call);
+
     call.on('disconnect', this.#reset);
     call.on('cancel', this.#reset);
     call.on('reject', this.#reset);
     this.#call = call;
     this.#setStatus('incoming');
   };
+
+  #onIncomingEvent(call) {
+    const incomingEvent = new CustomEvent('onIncoming', {
+      detail: { call },
+    });
+    this.dispatchEvent(incomingEvent);
+  }
+
+  #onTokenWillExpireEvent(device) {
+    const tokenWillExpireEvent = new CustomEvent('onTokenWillExpire', {
+      detail: { device },
+    });
+    this.dispatchEvent(tokenWillExpireEvent);
+  }
 
   #render() {
     this.shadowRoot.innerHTML = `
