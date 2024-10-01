@@ -101,6 +101,7 @@ class TwilioVoiceDialer extends HTMLElement {
   };
 
   #render() {
+    // looks like we need to refactor to appendchild
     this.shadowRoot.innerHTML = `
       <div class="container">
         <p id="status">Status: pending</p>
@@ -120,6 +121,7 @@ class TwilioVoiceDialer extends HTMLElement {
           <button id="reject">Reject</button>
         </div>
         <input type="button" id="register" value="Register" />
+        <slot></slot>
       </div>
     `;
   }
