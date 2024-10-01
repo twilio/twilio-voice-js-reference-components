@@ -74,7 +74,7 @@ class TwilioVoiceDialer extends HTMLElement {
   async #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
     this.#device.on('tokenWillExpire', (device) => {
-      this.#onTokenWillExpireEvent(device);
+      this.#tokenWillExpireEvent(device);
     });
     this.#setStatus('idle');
 
@@ -96,7 +96,7 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #incomingHandler = (call) => {
-    this.#onIncomingEvent(call);
+    this.#incomingEvent(call);
 
     call.on('disconnect', this.#reset);
     call.on('cancel', this.#reset);
@@ -105,15 +105,15 @@ class TwilioVoiceDialer extends HTMLElement {
     this.#setStatus('incoming');
   };
 
-  #onIncomingEvent(call) {
-    const incomingEvent = new CustomEvent('onIncoming', {
+  #incomingEvent(call) {
+    const incomingEvent = new CustomEvent('incoming', {
       detail: { call },
     });
     this.dispatchEvent(incomingEvent);
   }
 
-  #onTokenWillExpireEvent(device) {
-    const tokenWillExpireEvent = new CustomEvent('onTokenWillExpire', {
+  #tokenWillExpireEvent(device) {
+    const tokenWillExpireEvent = new CustomEvent('tokenWillExpire', {
       detail: { device },
     });
     this.dispatchEvent(tokenWillExpireEvent);

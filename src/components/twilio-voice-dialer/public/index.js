@@ -4,16 +4,16 @@
 
   const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
   twilioVoiceDialer.setToken(data.token);
-  twilioVoiceDialer.addEventListener('onTokenWillExpire', async (e) => {
+  twilioVoiceDialer.addEventListener('tokenWillExpire', async (e) => {
     const device = e.detail.device;
-    console.log('onTokenWillExpire', device);
 
     const updateTokenResponse = await fetch(`/twilio-voice-dialer/token`);
     const updateTokenData = await updateTokenResponse.json();
     device.updateToken(updateTokenData.token);
   });
-  twilioVoiceDialer.addEventListener('onIncoming', (e) => {
+  twilioVoiceDialer.addEventListener('incoming', (e) => {
     const call = e.detail.call;
-    console.log('onIncoming', call);
+    // handle call events here
+    // example: call.on('disconnect', (call) => {});
   });
 })();
