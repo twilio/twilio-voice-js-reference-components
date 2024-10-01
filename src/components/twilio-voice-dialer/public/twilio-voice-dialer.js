@@ -21,10 +21,10 @@ class TwilioVoiceDialer extends HTMLElement {
       if (shouldRegister && !this.#isRegistered) {
         await this.#device.register();
         this.#isRegistered = true;
-        this.#device.on('incoming', this.#incomingHandler);
+        this.#device.on('incoming', this.#handleIncoming);
       } else if (!shouldRegister && this.#isRegistered) {
         this.#device.unregister();
-        this.#device.removeListener('incoming', this.#incomingHandler);
+        this.#device.removeListener('incoming', this.#handleIncoming);
         this.#isRegistered = false;
       }
       this.#setStatus('idle');
@@ -71,10 +71,20 @@ class TwilioVoiceDialer extends HTMLElement {
     this.#call.disconnect();
   }
 
+  #handleIncoming = (call) => {
+    this.#raiseIncomingEvent(call);
+
+    call.on('disconnect', this.#reset);
+    call.on('cancel', this.#reset);
+    call.on('reject', this.#reset);
+    this.#call = call;
+    this.#setStatus('incoming');
+  };
+
   async #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
     this.#device.on('tokenWillExpire', (device) => {
-      this.#tokenWillExpireEvent(device);
+      this.#raiseTokenWillExpireEvent(device);
     });
     this.#setStatus('idle');
 
@@ -95,28 +105,18 @@ class TwilioVoiceDialer extends HTMLElement {
     this.#call.reject();
   }
 
-  #incomingHandler = (call) => {
-    this.#incomingEvent(call);
-
-    call.on('disconnect', this.#reset);
-    call.on('cancel', this.#reset);
-    call.on('reject', this.#reset);
-    this.#call = call;
-    this.#setStatus('incoming');
-  };
-
-  #incomingEvent(call) {
-    const incomingEvent = new CustomEvent('incoming', {
+  #raiseIncomingEvent(call) {
+    const raiseIncomingEvent = new CustomEvent('incoming', {
       detail: { call },
     });
-    this.dispatchEvent(incomingEvent);
+    this.dispatchEvent(raiseIncomingEvent);
   }
 
-  #tokenWillExpireEvent(device) {
-    const tokenWillExpireEvent = new CustomEvent('tokenWillExpire', {
+  #raiseTokenWillExpireEvent(device) {
+    const raiseTokenWillExpireEvent = new CustomEvent('tokenWillExpire', {
       detail: { device },
     });
-    this.dispatchEvent(tokenWillExpireEvent);
+    this.dispatchEvent(raiseTokenWillExpireEvent);
   }
 
   #render() {
