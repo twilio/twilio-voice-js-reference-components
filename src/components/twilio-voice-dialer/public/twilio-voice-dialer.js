@@ -21,10 +21,10 @@ class TwilioVoiceDialer extends HTMLElement {
       if (shouldRegister && !this.#isRegistered) {
         await this.#device.register();
         this.#isRegistered = true;
-        this.#device.on('incoming', this.#incomingHandler);
+        this.#device.on('incoming', this.#handleIncoming);
       } else if (!shouldRegister && this.#isRegistered) {
         this.#device.unregister();
-        this.#device.removeListener('incoming', this.#incomingHandler);
+        this.#device.removeListener('incoming', this.#handleIncoming);
         this.#isRegistered = false;
       }
       this.#setStatus('idle');
@@ -45,6 +45,20 @@ class TwilioVoiceDialer extends HTMLElement {
     this.shadowRoot
       .querySelector('#reject')
       .addEventListener('click', () => this.#handleReject());
+  }
+
+  #dispatchIncomingEvent(call) {
+    const incomingEvent = new CustomEvent('incoming', {
+      detail: { call },
+    });
+    this.dispatchEvent(incomingEvent);
+  }
+
+  #dispatchTokenWillExpireEvent(device) {
+    const tokenWillExpireEvent = new CustomEvent('tokenWillExpire', {
+      detail: { device },
+    });
+    this.dispatchEvent(tokenWillExpireEvent);
   }
 
   disconnectedCallback() {
@@ -71,8 +85,21 @@ class TwilioVoiceDialer extends HTMLElement {
     this.#call.disconnect();
   }
 
+  #handleIncoming = (call) => {
+    this.#dispatchIncomingEvent(call);
+
+    call.on('disconnect', this.#reset);
+    call.on('cancel', this.#reset);
+    call.on('reject', this.#reset);
+    this.#call = call;
+    this.#setStatus('incoming');
+  };
+
   async #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
+    this.#device.on('tokenWillExpire', (device) => {
+      this.#dispatchTokenWillExpireEvent(device);
+    });
     this.#setStatus('idle');
 
     if (!this.#isRegistered && this.getAttribute('register') === 'true') {
@@ -91,14 +118,6 @@ class TwilioVoiceDialer extends HTMLElement {
   #handleReject() {
     this.#call.reject();
   }
-
-  #incomingHandler = (call) => {
-    call.on('disconnect', this.#reset);
-    call.on('cancel', this.#reset);
-    call.on('reject', this.#reset);
-    this.#call = call;
-    this.#setStatus('incoming');
-  };
 
   #render() {
     // looks like we need to refactor to appendchild
