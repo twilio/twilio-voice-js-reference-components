@@ -47,6 +47,20 @@ class TwilioVoiceDialer extends HTMLElement {
       .addEventListener('click', () => this.#handleReject());
   }
 
+  #dispatchIncomingEvent(call) {
+    const incomingEvent = new CustomEvent('incoming', {
+      detail: { call },
+    });
+    this.dispatchEvent(incomingEvent);
+  }
+
+  #dispatchTokenWillExpireEvent(device) {
+    const tokenWillExpireEvent = new CustomEvent('tokenWillExpire', {
+      detail: { device },
+    });
+    this.dispatchEvent(tokenWillExpireEvent);
+  }
+
   disconnectedCallback() {
     this.#device.destroy();
   }
@@ -72,7 +86,7 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #handleIncoming = (call) => {
-    this.#raiseIncomingEvent(call);
+    this.#dispatchIncomingEvent(call);
 
     call.on('disconnect', this.#reset);
     call.on('cancel', this.#reset);
@@ -84,7 +98,7 @@ class TwilioVoiceDialer extends HTMLElement {
   async #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
     this.#device.on('tokenWillExpire', (device) => {
-      this.#raiseTokenWillExpireEvent(device);
+      this.#dispatchTokenWillExpireEvent(device);
     });
     this.#setStatus('idle');
 
@@ -103,20 +117,6 @@ class TwilioVoiceDialer extends HTMLElement {
 
   #handleReject() {
     this.#call.reject();
-  }
-
-  #raiseIncomingEvent(call) {
-    const raiseIncomingEvent = new CustomEvent('incoming', {
-      detail: { call },
-    });
-    this.dispatchEvent(raiseIncomingEvent);
-  }
-
-  #raiseTokenWillExpireEvent(device) {
-    const raiseTokenWillExpireEvent = new CustomEvent('tokenWillExpire', {
-      detail: { device },
-    });
-    this.dispatchEvent(raiseTokenWillExpireEvent);
   }
 
   #render() {
