@@ -54,6 +54,13 @@ class TwilioVoiceDialer extends HTMLElement {
     this.dispatchEvent(incomingEvent);
   }
 
+  #dispatchOutgoingEvent(call) {
+    const outgoingEvent = new CustomEvent('outgoing', {
+      detail: { call },
+    });
+    this.dispatchEvent(outgoingEvent);
+  }
+
   #dispatchTokenWillExpireEvent(device) {
     const tokenWillExpireEvent = new CustomEvent('tokenWillExpire', {
       detail: { device },
@@ -74,6 +81,7 @@ class TwilioVoiceDialer extends HTMLElement {
     const recipient = this.shadowRoot.querySelector('#recipient').value;
     if (recipient) {
       this.#call = await this.#device.connect({ params: { recipient } });
+      this.#dispatchOutgoingEvent(this.#call);
       this.#setupCallHandlers(this.#call);
       this.#setStatus('inprogress');
     } else {
