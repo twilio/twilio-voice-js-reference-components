@@ -11,17 +11,19 @@ class TwilioVoiceDialer extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+
+    this.#render();
   }
 
   async attributeChangedCallback(name, oldValue, newValue) {
-    this.#render();
-
     if (name === 'register' && this.#device) {
       const shouldRegister = newValue === 'true';
       if (shouldRegister && !this.#isRegistered) {
         await this.#device.register();
         this.#isRegistered = true;
         this.#device.on('incoming', this.#handleIncoming);
+        this.shadowRoot.querySelector('#register-status').textContent =
+          'Register: true';
       } else if (!shouldRegister && this.#isRegistered) {
         this.#device.unregister();
         this.#device.removeListener('incoming', this.#handleIncoming);
@@ -29,22 +31,6 @@ class TwilioVoiceDialer extends HTMLElement {
       }
       this.#setStatus('idle');
     }
-
-    this.shadowRoot
-      .querySelector('#accept')
-      .addEventListener('click', () => this.#handleAccept());
-    this.shadowRoot
-      .querySelector('#call')
-      .addEventListener('click', () => this.#handleCall());
-    this.shadowRoot
-      .querySelector('#hangup')
-      .addEventListener('click', () => this.#handleHangup());
-    this.shadowRoot
-      .querySelector('#register')
-      .addEventListener('click', () => this.#handleRegister());
-    this.shadowRoot
-      .querySelector('#reject')
-      .addEventListener('click', () => this.#handleReject());
   }
 
   #dispatchIncomingEvent(call) {
@@ -120,27 +106,57 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #render() {
-    this.shadowRoot.innerHTML = `
-      <div class="container">
-        <p id="status">Status: pending</p>
-        <p id="register-status">
-          Register: ${this.getAttribute('register') === 'true'}
-        </p>
-        <input 
-          type="text"
-          placeholder="recipient"
-          id="recipient"
-          value="${this.getAttribute('recipient')}"
-        />
-        <div>
-          <button id="call">Call</button>
-          <button id="hangup">Hangup</button>
-          <button id="accept">Accept</button>
-          <button id="reject">Reject</button>
-        </div>
-        <input type="button" id="register" value="Register" />
-      </div>
-    `;
+    const dialerContainer = document.createElement('div');
+    const statusEl = document.createElement('p');
+    statusEl.setAttribute('id', 'status');
+    statusEl.textContent = 'Status: pending';
+    const registerEl = document.createElement('p');
+    registerEl.setAttribute('id', 'register-status');
+    registerEl.textContent = `Register: ${
+      this.getAttribute('register') === 'true'
+    }`;
+    const inputEl = document.createElement('input');
+    inputEl.setAttribute('type', 'text');
+    inputEl.setAttribute('placeholder', 'recipient');
+    inputEl.setAttribute('id', 'recipient');
+    inputEl.setAttribute('value', `${this.getAttribute('recipient')}`);
+
+    const callControlContainer = document.createElement('div');
+    const callButton = document.createElement('button');
+    callButton.setAttribute('id', 'call');
+    callButton.textContent = 'Call';
+    callButton.addEventListener('click', () => this.#handleCall());
+    const hangupButton = document.createElement('button');
+    hangupButton.setAttribute('id', 'hangup');
+    hangupButton.textContent = 'Hangup';
+    hangupButton.addEventListener('click', () => this.#handleHangup());
+    const acceptButton = document.createElement('button');
+    acceptButton.setAttribute('id', 'accept');
+    acceptButton.textContent = 'Accept';
+    acceptButton.addEventListener('click', () => this.#handleAccept());
+    const rejectButton = document.createElement('button');
+    rejectButton.setAttribute('id', 'reject');
+    rejectButton.textContent = 'Reject';
+    rejectButton.addEventListener('click', () => this.#handleReject());
+
+    const registerButton = document.createElement('input');
+    registerButton.setAttribute('type', 'button');
+    registerButton.setAttribute('id', 'register');
+    registerButton.setAttribute('value', 'Register');
+    registerButton.addEventListener('click', () => this.#handleRegister());
+
+    callControlContainer.appendChild(callButton);
+    callControlContainer.appendChild(hangupButton);
+    callControlContainer.appendChild(acceptButton);
+    callControlContainer.appendChild(rejectButton);
+
+    dialerContainer.appendChild(statusEl);
+    dialerContainer.appendChild(registerEl);
+    dialerContainer.appendChild(inputEl);
+    dialerContainer.appendChild(callControlContainer);
+    dialerContainer.appendChild(registerButton);
+
+    this.shadowRoot.appendChild(dialerContainer);
   }
 
   #reset = () => {
