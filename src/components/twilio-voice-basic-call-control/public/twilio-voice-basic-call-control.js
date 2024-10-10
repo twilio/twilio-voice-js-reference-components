@@ -16,9 +16,14 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       const call = e.detail.call;
       this.#call = call;
     });
-  }
 
-  async attributeChangedCallback() {}
+    this.shadowRoot
+      .querySelector('#hold')
+      .addEventListener('click', () => this.#handleHold());
+    this.shadowRoot
+      .querySelector('#resume')
+      .addEventListener('click', () => this.#handleResume());
+  }
 
   #handleHold() {
     if (this.#call) {
@@ -33,20 +38,12 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   }
 
   #render() {
-    const callControlContainer = document.createElement('div');
-    const holdButton = document.createElement('button');
-    holdButton.setAttribute('id', 'hold');
-    holdButton.textContent = 'Hold';
-    holdButton.addEventListener('click', () => this.#handleHold());
-
-    const resumeButton = document.createElement('button');
-    resumeButton.setAttribute('id', 'resume');
-    resumeButton.textContent = 'Resume';
-    resumeButton.addEventListener('click', () => this.#handleResume());
-
-    callControlContainer.appendChild(holdButton);
-    callControlContainer.appendChild(resumeButton);
-    this.shadowRoot.appendChild(callControlContainer);
+    this.shadowRoot.innerHTML = `
+      <div>
+        <button id="hold">Hold</button>
+        <button id="resume">Resume</button>
+      </div>
+    `;
   }
 }
 

@@ -128,7 +128,6 @@ class TwilioVoiceDialer extends HTMLElement {
   }
 
   #render() {
-    // looks like we need to refactor to appendchild
     this.shadowRoot.innerHTML = `
       <div class="container">
         <p id="status">Status: pending</p>
