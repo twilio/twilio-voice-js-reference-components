@@ -28,21 +28,21 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       .addEventListener('click', () => this.#handleResume());
   }
 
-  #handleHold() {
-    this.#setHold(true);
-  }
-
-  #handleResume() {
-    this.#setHold(false);
-  }
-
-  #messageReceivedHandler(message) {
+  #handleCallMessageReceived(message) {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
       this.#callSid = content.callSid;
       this.#conferenceSid = content.conferenceSid;
       this.#showButtons('hold');
     }
+  }
+
+  #handleHold() {
+    this.#setHold(true);
+  }
+
+  #handleResume() {
+    this.#setHold(false);
   }
 
   #render() {
@@ -55,9 +55,9 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   }
 
   #reset = () => {
-    this.#call = null;
-    this.#callSid = null;
-    this.#conferenceSid = null;
+    this.#call = undefined;
+    this.#callSid = undefined;
+    this.#conferenceSid = undefined;
     this.#showButtons();
   };
 
@@ -67,7 +67,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.#call.on('cancel', this.#reset);
     this.#call.on('reject', this.#reset);
     this.#call.on('messageReceived', (message) =>
-      this.#messageReceivedHandler(message)
+      this.#handleCallMessageReceived(message)
     );
   };
 
@@ -78,6 +78,9 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
           this.#conferenceSid
         }/participants/${this.#callSid}`,
         {
+          headers: {
+            'Content-Type': 'application/json',
+          },
           method: 'POST',
           body: JSON.stringify({
             hold: shouldHold,
