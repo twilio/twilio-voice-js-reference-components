@@ -16,4 +16,9 @@
     // handle call events here
     // example: call.on('disconnect', (call) => {});
   });
+  twilioVoiceDialer.addEventListener('outgoing', (e) => {
+    const call = e.detail.call;
+    // handle outgoing call events here
+    // example: call.on('disconnect', (call) => {});
+  });
 })();
