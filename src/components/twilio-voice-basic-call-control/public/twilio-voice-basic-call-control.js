@@ -8,7 +8,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.attachShadow({ mode: 'open' });
 
     this.#render();
-    this.#showButtons();
+    this.#showHoldButtons();
+    this.#showMuteButtons();
 
     const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
     twilioVoiceDialer.addEventListener('incoming', (e) => {
@@ -26,6 +27,12 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.shadowRoot
       .querySelector('#resume')
       .addEventListener('click', () => this.#handleResume());
+    this.shadowRoot
+      .querySelector('#mute')
+      .addEventListener('click', () => this.#handleMute());
+    this.shadowRoot
+      .querySelector('#unmute')
+      .addEventListener('click', () => this.#handleUnmute());
   }
 
   #handleCallMessageReceived(message) {
@@ -33,12 +40,26 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     if (messageType === 'user-defined-message') {
       this.#callSid = content.callSid;
       this.#conferenceSid = content.conferenceSid;
-      this.#showButtons('hold');
+      this.#showHoldButtons('hold');
     }
   }
 
   #handleHold() {
     this.#setHold(true);
+  }
+
+  #handleMute() {
+    if (this.#call) {
+      this.#call.mute(true);
+      this.#showMuteButtons('unmute');
+    }
+  }
+
+  #handleUnmute() {
+    if (this.#call && this.#call.isMuted()) {
+      this.#call.mute(false);
+      this.#showMuteButtons('mute');
+    }
   }
 
   #handleResume() {
@@ -48,8 +69,14 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   #render() {
     this.shadowRoot.innerHTML = `
       <div>
-        <button id="hold">Hold</button>
-        <button id="resume">Resume</button>
+        <div id="hold-buttons">
+          <button id="hold">Hold</button>
+          <button id="resume">Resume</button>
+        </div>
+        <div id="mute-buttons">
+          <button id="mute">Mute</button>
+          <button id="unmute">Unmute</button>
+        </div>
       </div>
     `;
   }
@@ -58,7 +85,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.#call = undefined;
     this.#callSid = undefined;
     this.#conferenceSid = undefined;
-    this.#showButtons();
+    this.#showHoldButtons();
+    this.#showMuteButtons();
   };
 
   #setCallHandlers = (call) => {
@@ -69,6 +97,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.#call.on('messageReceived', (message) =>
       this.#handleCallMessageReceived(message)
     );
+    this.#showMuteButtons('mute');
   };
 
   async #setHold(shouldHold) {
@@ -88,13 +117,23 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
         }
       );
       if (response.status === 200) {
-        this.#showButtons(shouldHold ? 'resume' : 'hold');
+        this.#showHoldButtons(shouldHold ? 'resume' : 'hold');
       }
     }
   }
 
-  #showButtons(...buttonsToShow) {
-    this.shadowRoot.querySelectorAll('button').forEach((el) => {
+  #showHoldButtons(...buttonsToShow) {
+    this.shadowRoot.querySelectorAll('#hold-buttons > button').forEach((el) => {
+      if (buttonsToShow.includes(el.id)) {
+        el.style.display = 'inline-block';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  #showMuteButtons(...buttonsToShow) {
+    this.shadowRoot.querySelectorAll('#mute-buttons > button').forEach((el) => {
       if (buttonsToShow.includes(el.id)) {
         el.style.display = 'inline-block';
       } else {
