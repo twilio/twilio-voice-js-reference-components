@@ -8,11 +8,12 @@ const VoiceGrant = AccessToken.VoiceGrant;
 const VoiceResponse = Twilio.twiml.VoiceResponse;
 
 const router = Router();
-const { appSid, accountSid, apiKeySid, apiKeySecret, callerId, callbackBaseURL, defaultIdentity } = config;
+const { appSid, accountSid, apiKeySid, apiKeySecret, authToken, callerId, callbackBaseURL, defaultIdentity } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 
 const isPhoneNumber = (recipient) => /^[\d\+\-\(\) ]+$/.test(recipient);
 
+// Validate user identity
 router.get('/token', (req, res) => {
   const identity = req.query.identity || defaultIdentity;
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, { identity, ttl: 3600 });
@@ -25,7 +26,8 @@ router.get('/token', (req, res) => {
   res.send({ token: token.toJwt() });
 });
 
-router.post('/twiml', (req, res) => {
+// Secure your app by validating incoming Twilio requests. See: https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests 
+router.post('/twiml', Twilio.webhook({protocol: 'https'}, authToken), (req, res) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial();
   
@@ -60,7 +62,8 @@ router.post('/twiml', (req, res) => {
     .send(twiml.toString());
 });
 
-router.post('/conference-events', async (req, res) => {
+// Secure your app by validating incoming Twilio requests. See: https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests 
+router.post('/conference-events', Twilio.webhook({protocol: 'https'}, authToken), async (req, res) => {
   const { ConferenceSid, StatusCallbackEvent } = req.body;
 
   if (StatusCallbackEvent === 'participant-join') {
