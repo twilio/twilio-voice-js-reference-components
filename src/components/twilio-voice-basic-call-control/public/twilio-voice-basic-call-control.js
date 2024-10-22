@@ -41,6 +41,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       this.#callSid = content.callSid;
       this.#conferenceSid = content.conferenceSid;
       this.#showHoldButtons('hold');
+      this.#showMuteButtons('mute');
     }
   }
 
@@ -49,22 +50,19 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   }
 
   #handleMute() {
-    if (this.#call) {
-      this.#call.mute(true);
-      this.#showMuteButtons('unmute');
-    }
+    this.#setMute(true);
   }
 
   #handleUnmute() {
-    if (this.#call && this.#call.isMuted()) {
-      this.#call.mute(false);
-      this.#showMuteButtons('mute');
-    }
+    this.#setMute(false);
   }
 
   #handleResume() {
     this.#setHold(false);
   }
+
+  #isConferenceCall = () =>
+    !!(this.#call && this.#callSid && this.#conferenceSid);
 
   #render() {
     this.shadowRoot.innerHTML = `
@@ -97,27 +95,22 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.#call.on('messageReceived', (message) =>
       this.#handleCallMessageReceived(message)
     );
-    this.#showMuteButtons('mute');
   };
 
   async #setHold(shouldHold) {
-    if (this.#call && this.#callSid && this.#conferenceSid) {
-      const response = await fetch(
-        `/twilio-voice-basic-call-control/conferences/${
-          this.#conferenceSid
-        }/participants/${this.#callSid}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            hold: shouldHold,
-          }),
-        }
-      );
+    if (this.#isConferenceCall()) {
+      const response = await this.#updateConferenceCall({ hold: shouldHold });
       if (response.status === 200) {
         this.#showHoldButtons(shouldHold ? 'resume' : 'hold');
+      }
+    }
+  }
+
+  async #setMute(shouldMute) {
+    if (this.#isConferenceCall()) {
+      const response = await this.#updateConferenceCall({ muted: shouldMute });
+      if (response.status === 200) {
+        this.#showMuteButtons(shouldMute ? 'unmute' : 'mute');
       }
     }
   }
@@ -140,6 +133,21 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
         el.style.display = 'none';
       }
     });
+  }
+
+  async #updateConferenceCall(params) {
+    return await fetch(
+      `/twilio-voice-basic-call-control/conferences/${
+        this.#conferenceSid
+      }/participants/${this.#callSid}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify(params),
+      }
+    );
   }
 }
 
