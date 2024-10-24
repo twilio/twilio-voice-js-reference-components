@@ -10,6 +10,8 @@ router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res
   const { hold } = req.body;
   const { callSid, conferenceSid } = req.params;
 
+  // Update a Participant resource
+  // https://www.twilio.com/docs/voice/api/conference-participant-resource#update-a-participant-resource
   await client
     .conferences(conferenceSid)
     .participants(callSid)
