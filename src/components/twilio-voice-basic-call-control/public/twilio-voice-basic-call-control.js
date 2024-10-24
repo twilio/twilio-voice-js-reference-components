@@ -51,7 +51,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       if (response.status === 200) {
         this.#showButtons('hold', shouldHold ? 'resume' : 'hold');
       } else {
-        console.error('Unable to set hold:', response.error);
+        console.error('Unable to set hold: ', response.error);
       }
     }
   }
@@ -62,7 +62,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       if (response.status === 200) {
         this.#showButtons('mute', shouldMute ? 'unmute' : 'mute');
       } else {
-        console.error('Unable to set mute:', response.error);
+        console.error('Unable to set mute: ', response.error);
       }
     }
   }
