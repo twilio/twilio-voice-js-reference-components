@@ -13,7 +13,10 @@ router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res
   await client
     .conferences(conferenceSid)
     .participants(callSid)
-    .update({ hold, muted });
+    .update({
+      hold: hold || false,
+      muted: muted || false
+    });
 
   res.sendStatus(200);
 });

@@ -8,8 +8,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.attachShadow({ mode: 'open' });
 
     this.#render();
-    this.#showHoldButtons();
-    this.#showMuteButtons();
+    this.#showButtons('hold');
+    this.#showButtons('mute');
 
     const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
     twilioVoiceDialer.addEventListener('incoming', (e) => {
@@ -23,16 +23,16 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
 
     this.shadowRoot
       .querySelector('#hold')
-      .addEventListener('click', () => this.#handleHold());
+      .addEventListener('click', () => this.#handleHold(true));
     this.shadowRoot
       .querySelector('#resume')
-      .addEventListener('click', () => this.#handleResume());
+      .addEventListener('click', () => this.#handleHold(false));
     this.shadowRoot
       .querySelector('#mute')
-      .addEventListener('click', () => this.#handleMute());
+      .addEventListener('click', () => this.#handleMute(true));
     this.shadowRoot
       .querySelector('#unmute')
-      .addEventListener('click', () => this.#handleUnmute());
+      .addEventListener('click', () => this.#handleMute(false));
   }
 
   #handleCallMessageReceived(message) {
@@ -40,29 +40,35 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     if (messageType === 'user-defined-message') {
       this.#callSid = content.callSid;
       this.#conferenceSid = content.conferenceSid;
-      this.#showHoldButtons('hold');
-      this.#showMuteButtons('mute');
+      this.#showButtons('hold', 'hold');
+      this.#showButtons('mute', 'mute');
     }
   }
 
-  #handleHold() {
-    this.#setHold(true);
+  async #handleHold(shouldHold) {
+    if (this.#hasParticipantConnected()) {
+      const response = await this.#updateConferenceCall({ hold: shouldHold });
+      if (response.status === 200) {
+        this.#showButtons('hold', shouldHold ? 'resume' : 'hold');
+      } else {
+        console.error('Unable to set hold:', response.error);
+      }
+    }
   }
 
-  #handleMute() {
-    this.#setMute(true);
+  async #handleMute(shouldMute) {
+    if (this.#hasParticipantConnected()) {
+      const response = await this.#updateConferenceCall({ muted: shouldMute });
+      if (response.status === 200) {
+        this.#showButtons('mute', shouldMute ? 'unmute' : 'mute');
+      } else {
+        console.error('Unable to set mute:', response.error);
+      }
+    }
   }
 
-  #handleUnmute() {
-    this.#setMute(false);
-  }
-
-  #handleResume() {
-    this.#setHold(false);
-  }
-
-  #isConferenceCall = () =>
-    !!(this.#call && this.#callSid && this.#conferenceSid);
+  #hasParticipantConnected = () =>
+    Boolean(this.#call && this.#callSid && this.#conferenceSid);
 
   #render() {
     this.shadowRoot.innerHTML = `
@@ -83,8 +89,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.#call = undefined;
     this.#callSid = undefined;
     this.#conferenceSid = undefined;
-    this.#showHoldButtons();
-    this.#showMuteButtons();
+    this.#showButtons('hold');
+    this.#showButtons('mute');
   };
 
   #setCallHandlers = (call) => {
@@ -97,42 +103,16 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     );
   };
 
-  async #setHold(shouldHold) {
-    if (this.#isConferenceCall()) {
-      const response = await this.#updateConferenceCall({ hold: shouldHold });
-      if (response.status === 200) {
-        this.#showHoldButtons(shouldHold ? 'resume' : 'hold');
-      }
-    }
-  }
-
-  async #setMute(shouldMute) {
-    if (this.#isConferenceCall()) {
-      const response = await this.#updateConferenceCall({ muted: shouldMute });
-      if (response.status === 200) {
-        this.#showMuteButtons(shouldMute ? 'unmute' : 'mute');
-      }
-    }
-  }
-
-  #showHoldButtons(...buttonsToShow) {
-    this.shadowRoot.querySelectorAll('#hold-buttons > button').forEach((el) => {
-      if (buttonsToShow.includes(el.id)) {
-        el.style.display = 'inline-block';
-      } else {
-        el.style.display = 'none';
-      }
-    });
-  }
-
-  #showMuteButtons(...buttonsToShow) {
-    this.shadowRoot.querySelectorAll('#mute-buttons > button').forEach((el) => {
-      if (buttonsToShow.includes(el.id)) {
-        el.style.display = 'inline-block';
-      } else {
-        el.style.display = 'none';
-      }
-    });
+  #showButtons(query, ...buttonsToShow) {
+    this.shadowRoot
+      .querySelectorAll(`#${query}-buttons > button`)
+      .forEach((el) => {
+        if (buttonsToShow.includes(el.id)) {
+          el.style.display = 'inline-block';
+        } else {
+          el.style.display = 'none';
+        }
+      });
   }
 
   async #updateConferenceCall(params) {
