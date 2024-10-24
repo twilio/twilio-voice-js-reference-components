@@ -8,8 +8,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.attachShadow({ mode: 'open' });
 
     this.#render();
-    this.#showButtons('hold');
-    this.#showButtons('mute');
+    this.#showButtons('#hold-buttons');
+    this.#showButtons('#mute-buttons');
 
     const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
     twilioVoiceDialer.addEventListener('incoming', (e) => {
@@ -40,8 +40,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     if (messageType === 'user-defined-message') {
       this.#callSid = content.callSid;
       this.#conferenceSid = content.conferenceSid;
-      this.#showButtons('hold', 'hold');
-      this.#showButtons('mute', 'mute');
+      this.#showButtons('#hold-buttons', 'hold');
+      this.#showButtons('#mute-buttons', 'mute');
     }
   }
 
@@ -49,7 +49,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     if (this.#hasParticipantConnected()) {
       const response = await this.#updateConferenceCall({ hold: shouldHold });
       if (response.status === 200) {
-        this.#showButtons('hold', shouldHold ? 'resume' : 'hold');
+        this.#showButtons('#hold-buttons', shouldHold ? 'resume' : 'hold');
       } else {
         console.error('Unable to set hold: ', response.error);
       }
@@ -60,7 +60,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     if (this.#hasParticipantConnected()) {
       const response = await this.#updateConferenceCall({ muted: shouldMute });
       if (response.status === 200) {
-        this.#showButtons('mute', shouldMute ? 'unmute' : 'mute');
+        this.#showButtons('#mute-buttons', shouldMute ? 'unmute' : 'mute');
       } else {
         console.error('Unable to set mute: ', response.error);
       }
@@ -89,8 +89,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.#call = undefined;
     this.#callSid = undefined;
     this.#conferenceSid = undefined;
-    this.#showButtons('hold');
-    this.#showButtons('mute');
+    this.#showButtons('#hold-buttons');
+    this.#showButtons('#mute-buttons');
   };
 
   #setCallHandlers = (call) => {
@@ -103,9 +103,9 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     );
   };
 
-  #showButtons(query, ...buttonsToShow) {
+  #showButtons(parentSelector, ...buttonsToShow) {
     this.shadowRoot
-      .querySelectorAll(`#${query}-buttons > button`)
+      .querySelectorAll(`${parentSelector} > button`)
       .forEach((el) => {
         if (buttonsToShow.includes(el.id)) {
           el.style.display = 'inline-block';
