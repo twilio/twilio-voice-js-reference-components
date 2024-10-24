@@ -7,13 +7,12 @@ const { accountSid, apiKeySid, apiKeySecret } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 
 router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res) => {
-  const { hold } = req.body;
   const { callSid, conferenceSid } = req.params;
 
   await client
     .conferences(conferenceSid)
     .participants(callSid)
-    .update({ hold });
+    .update(req.body);
 
   res.sendStatus(200);
 });
