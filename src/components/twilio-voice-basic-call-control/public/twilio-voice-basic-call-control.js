@@ -8,7 +8,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.attachShadow({ mode: 'open' });
 
     this.#render();
-    this.#showButtons();
+    this.#showButtons('#hold-buttons');
+    this.#showButtons('#mute-buttons');
 
     const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
     twilioVoiceDialer.addEventListener('incoming', (e) => {
@@ -22,10 +23,16 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
 
     this.shadowRoot
       .querySelector('#hold')
-      .addEventListener('click', () => this.#handleHold());
+      .addEventListener('click', () => this.#handleHold(true));
     this.shadowRoot
       .querySelector('#resume')
-      .addEventListener('click', () => this.#handleResume());
+      .addEventListener('click', () => this.#handleHold(false));
+    this.shadowRoot
+      .querySelector('#mute')
+      .addEventListener('click', () => this.#handleMute(true));
+    this.shadowRoot
+      .querySelector('#unmute')
+      .addEventListener('click', () => this.#handleMute(false));
   }
 
   #handleCallMessageReceived(message) {
@@ -33,23 +40,47 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     if (messageType === 'user-defined-message') {
       this.#callSid = content.callSid;
       this.#conferenceSid = content.conferenceSid;
-      this.#showButtons('hold');
+      this.#showButtons('#hold-buttons', 'hold');
+      this.#showButtons('#mute-buttons', 'mute');
     }
   }
 
-  #handleHold() {
-    this.#setHold(true);
+  async #handleHold(shouldHold) {
+    if (this.#hasParticipantConnected()) {
+      const response = await this.#updateConferenceCall({ hold: shouldHold });
+      if (response.status === 200) {
+        this.#showButtons('#hold-buttons', shouldHold ? 'resume' : 'hold');
+      } else {
+        console.error('Unable to set hold: ', response.error);
+      }
+    }
   }
 
-  #handleResume() {
-    this.#setHold(false);
+  async #handleMute(shouldMute) {
+    if (this.#hasParticipantConnected()) {
+      const response = await this.#updateConferenceCall({ muted: shouldMute });
+      if (response.status === 200) {
+        this.#showButtons('#mute-buttons', shouldMute ? 'unmute' : 'mute');
+      } else {
+        console.error('Unable to set mute: ', response.error);
+      }
+    }
   }
+
+  #hasParticipantConnected = () =>
+    Boolean(this.#call && this.#callSid && this.#conferenceSid);
 
   #render() {
     this.shadowRoot.innerHTML = `
       <div>
-        <button id="hold">Hold</button>
-        <button id="resume">Resume</button>
+        <div id="hold-buttons">
+          <button id="hold">Hold</button>
+          <button id="resume">Resume</button>
+        </div>
+        <div id="mute-buttons">
+          <button id="mute">Mute</button>
+          <button id="unmute">Unmute</button>
+        </div>
       </div>
     `;
   }
@@ -58,7 +89,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.#call = undefined;
     this.#callSid = undefined;
     this.#conferenceSid = undefined;
-    this.#showButtons();
+    this.#showButtons('#hold-buttons');
+    this.#showButtons('#mute-buttons');
   };
 
   #setCallHandlers = (call) => {
@@ -71,36 +103,31 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     );
   };
 
-  async #setHold(shouldHold) {
-    if (this.#call && this.#callSid && this.#conferenceSid) {
-      const response = await fetch(
-        `/twilio-voice-basic-call-control/conferences/${
-          this.#conferenceSid
-        }/participants/${this.#callSid}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            hold: shouldHold,
-          }),
+  #showButtons(parentSelector, ...buttonsToShow) {
+    this.shadowRoot
+      .querySelectorAll(`${parentSelector} > button`)
+      .forEach((el) => {
+        if (buttonsToShow.includes(el.id)) {
+          el.style.display = 'inline-block';
+        } else {
+          el.style.display = 'none';
         }
-      );
-      if (response.status === 200) {
-        this.#showButtons(shouldHold ? 'resume' : 'hold');
-      }
-    }
+      });
   }
 
-  #showButtons(...buttonsToShow) {
-    this.shadowRoot.querySelectorAll('button').forEach((el) => {
-      if (buttonsToShow.includes(el.id)) {
-        el.style.display = 'inline-block';
-      } else {
-        el.style.display = 'none';
+  async #updateConferenceCall(params) {
+    return await fetch(
+      `/twilio-voice-basic-call-control/conferences/${
+        this.#conferenceSid
+      }/participants/${this.#callSid}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify(params),
       }
-    });
+    );
   }
 }
 
