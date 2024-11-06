@@ -1,5 +1,10 @@
 (async function () {
-  const response = await fetch(`/twilio-voice-dialer/token`);
+  const urlParams = new URLSearchParams(window.location.search);
+  const identity = urlParams.get('identity');
+
+  const response = await fetch(
+    `/twilio-voice-dialer/token?identity=${identity}`
+  );
   const data = await response.json();
 
   const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');

@@ -1,15 +1,12 @@
 class TwilioVoiceBasicCallControl extends HTMLElement {
   #call;
-  #callSid;
   #conferenceSid;
+  #participants = new Map();
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-
     this.#render();
-    this.#showButtons('#hold-buttons');
-    this.#showButtons('#mute-buttons');
 
     const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
     twilioVoiceDialer.addEventListener('incoming', (e) => {
@@ -22,75 +19,165 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     });
 
     this.shadowRoot
-      .querySelector('#hold')
-      .addEventListener('click', () => this.#handleHold(true));
-    this.shadowRoot
-      .querySelector('#resume')
-      .addEventListener('click', () => this.#handleHold(false));
-    this.shadowRoot
-      .querySelector('#mute')
-      .addEventListener('click', () => this.#handleMute(true));
-    this.shadowRoot
-      .querySelector('#unmute')
-      .addEventListener('click', () => this.#handleMute(false));
+      .querySelector('#add-conference')
+      .addEventListener('click', () => this.#handleAddConference());
+  }
+
+  async #handleAddConference() {
+    const participant = this.shadowRoot.querySelector('#add-participant').value;
+
+    if (participant === '') {
+      console.log('Please enter a validparticipant');
+    } else {
+      await fetch(
+        `/twilio-voice-basic-call-control/conferences/${
+          this.#conferenceSid
+        }/participants/add/${participant}`,
+        {
+          method: 'POST',
+        }
+      );
+    }
   }
 
   #handleCallMessageReceived(message) {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
-      this.#callSid = content.callSid;
+      const { callSid, conferenceSid, hold, label, muted } = content;
+      this.#participants.set(callSid, { conferenceSid, hold, label, muted });
       this.#conferenceSid = content.conferenceSid;
-      this.#showButtons('#hold-buttons', 'hold');
-      this.#showButtons('#mute-buttons', 'mute');
+      this.#showElement('#add-participant-container', true);
+      this.#renderCallControlButtons();
     }
   }
 
-  async #handleHold(shouldHold) {
-    if (this.#hasParticipantConnected()) {
-      const response = await this.#updateConferenceCall({ hold: shouldHold });
-      if (response.status === 200) {
-        this.#showButtons('#hold-buttons', shouldHold ? 'resume' : 'hold');
-      } else {
-        console.error('Unable to set hold: ', response.error);
-      }
+  async #handleHold(shouldHold, callSid) {
+    const response = await this.#updateConferenceCall(callSid, {
+      hold: shouldHold,
+    });
+    if (response.status === 200) {
+      this.#showElement(`#${callSid}-hold`, !shouldHold);
+      this.#showElement(`#${callSid}-resume`, shouldHold);
+    } else {
+      console.error('Unable to set hold: ', response.error);
     }
   }
 
-  async #handleMute(shouldMute) {
-    if (this.#hasParticipantConnected()) {
-      const response = await this.#updateConferenceCall({ muted: shouldMute });
-      if (response.status === 200) {
-        this.#showButtons('#mute-buttons', shouldMute ? 'unmute' : 'mute');
-      } else {
-        console.error('Unable to set mute: ', response.error);
-      }
+  async #handleMute(shouldMute, callSid) {
+    const response = await this.#updateConferenceCall(callSid, {
+      muted: shouldMute,
+    });
+    if (response.status === 200) {
+      this.#showElement(`#${callSid}-mute`, !shouldMute);
+      this.#showElement(`#${callSid}-unmute`, shouldMute);
+    } else {
+      console.error('Unable to set mute: ', response.error);
     }
   }
 
-  #hasParticipantConnected = () =>
-    Boolean(this.#call && this.#callSid && this.#conferenceSid);
+  #removeCallControlButtons() {
+    const callControlButtons = this.shadowRoot.querySelector(
+      '#call-control-buttons'
+    );
+    if (callControlButtons) {
+      callControlButtons.remove();
+    }
+  }
 
   #render() {
     this.shadowRoot.innerHTML = `
-      <div>
-        <div id="hold-buttons">
-          <button id="hold">Hold</button>
-          <button id="resume">Resume</button>
-        </div>
-        <div id="mute-buttons">
-          <button id="mute">Mute</button>
-          <button id="unmute">Unmute</button>
-        </div>
+      <div id="basic-call-control">
+        <div id="add-participant-container" style="display: none;">
+          <input
+            type="text"
+            placeholder="Add participant"
+            id="add-participant"
+            value=""
+          />
+          <button id="add-conference">Add</button>
+        <div>
       </div>
     `;
   }
 
+  #renderCallControlButton(options) {
+    const { name, callSid, shouldHide } = options;
+    const button = document.createElement('button');
+    button.innerHTML = name;
+    button.setAttribute('id', `${callSid}-${name}`);
+    button.style.display = shouldHide ? 'none' : 'inline-block';
+    switch (name) {
+      case 'hold':
+        button.addEventListener('click', () => this.#handleHold(true, callSid));
+        break;
+      case 'resume':
+        button.addEventListener('click', () =>
+          this.#handleHold(false, callSid)
+        );
+        break;
+      case 'mute':
+        button.addEventListener('click', () => this.#handleMute(true, callSid));
+        break;
+      case 'unmute':
+        button.addEventListener('click', () =>
+          this.#handleMute(false, callSid)
+        );
+    }
+    return button;
+  }
+
+  #renderCallControlButtons() {
+    this.#removeCallControlButtons();
+    const component = this.shadowRoot.querySelector('#basic-call-control');
+    const callControlButtons = document.createElement('div');
+    callControlButtons.setAttribute('id', 'call-control-buttons');
+    component.appendChild(callControlButtons);
+
+    for (const [callSid, content] of this.#participants) {
+      const participantContainer = document.createElement('div');
+
+      const label = document.createElement('span');
+      label.innerHTML = `${content.label}: `;
+      participantContainer.appendChild(label);
+
+      const holdButton = this.#renderCallControlButton({
+        name: 'hold',
+        callSid,
+        shouldHide: content.hold,
+      });
+      participantContainer.appendChild(holdButton);
+
+      const resumeButton = this.#renderCallControlButton({
+        callSid,
+        name: 'resume',
+        shouldHide: !content.hold,
+      });
+      participantContainer.appendChild(resumeButton);
+
+      const muteButton = this.#renderCallControlButton({
+        callSid,
+        name: 'mute',
+        shouldHide: content.muted,
+      });
+      participantContainer.appendChild(muteButton);
+
+      const unMuteButton = this.#renderCallControlButton({
+        callSid,
+        name: 'unmute',
+        shouldHide: !content.muted,
+      });
+      participantContainer.appendChild(unMuteButton);
+
+      callControlButtons.appendChild(participantContainer);
+    }
+  }
+
   #reset = () => {
     this.#call = undefined;
-    this.#callSid = undefined;
     this.#conferenceSid = undefined;
-    this.#showButtons('#hold-buttons');
-    this.#showButtons('#mute-buttons');
+    this.#participants = new Map();
+    this.#removeCallControlButtons();
+    this.#showElement('#add-participant-container', false);
   };
 
   #setCallHandlers = (call) => {
@@ -103,23 +190,17 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     );
   };
 
-  #showButtons(parentSelector, ...buttonsToShow) {
-    this.shadowRoot
-      .querySelectorAll(`${parentSelector} > button`)
-      .forEach((el) => {
-        if (buttonsToShow.includes(el.id)) {
-          el.style.display = 'inline-block';
-        } else {
-          el.style.display = 'none';
-        }
-      });
+  #showElement(parentSelector, shouldShow) {
+    this.shadowRoot.querySelector(parentSelector).style.display = shouldShow
+      ? 'inline-block'
+      : 'none';
   }
 
-  async #updateConferenceCall(params) {
+  async #updateConferenceCall(callSid, params) {
     return await fetch(
       `/twilio-voice-basic-call-control/conferences/${
         this.#conferenceSid
-      }/participants/${this.#callSid}`,
+      }/participants/${callSid}`,
       {
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import Twilio from 'twilio';
 import config from '../../config.js';
+import { isPhoneNumber } from '../../utils.js';
 
 const AccessToken = Twilio.jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
@@ -10,8 +11,6 @@ const VoiceResponse = Twilio.twiml.VoiceResponse;
 const router = Router();
 const { appSid, accountSid, apiKeySid, apiKeySecret, authToken, callerId, callbackBaseURL, defaultIdentity } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
-
-const isPhoneNumber = (recipient) => /^[\d\+\-\(\) ]+$/.test(recipient);
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => {
@@ -31,7 +30,7 @@ router.get('/token', (req, res) => {
 router.post('/twiml', Twilio.webhook({protocol: 'https'}, authToken), (req, res) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial();
-  
+
   // Generates 1:1 conference
   const roomName = `conference-${crypto.randomUUID()}`;
   let recipient = req.body.recipient || defaultIdentity;
