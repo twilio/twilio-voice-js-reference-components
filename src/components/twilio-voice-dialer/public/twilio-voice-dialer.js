@@ -6,6 +6,7 @@ class TwilioVoiceDialer extends HTMLElement {
   #call;
   #device;
   #isRegistered = false;
+  #status = 'idle';
   #token;
 
   constructor() {
@@ -27,7 +28,7 @@ class TwilioVoiceDialer extends HTMLElement {
         this.#device.removeListener('incoming', this.#handleIncoming);
         this.#isRegistered = false;
       }
-      this.#setStatus('idle');
+      this.#setStatus(this.#status);
     }
 
     this.shadowRoot
@@ -141,10 +142,10 @@ class TwilioVoiceDialer extends HTMLElement {
           value="${this.getAttribute('recipient')}"
         />
         <div>
-          <button id="call">Call</button>
-          <button id="hangup">Hangup</button>
-          <button id="accept">Accept</button>
-          <button id="reject">Reject</button>
+          <button id="call" style="display: none;">Call</button>
+          <button id="hangup" style="display: none;">Hangup</button>
+          <button id="accept" style="display: none;">Accept</button>
+          <button id="reject" style="display: none;">Reject</button>
         </div>
         <input type="button" id="register" value="Register" />
         <slot></slot>
@@ -158,16 +159,17 @@ class TwilioVoiceDialer extends HTMLElement {
   };
 
   #setStatus(status) {
-    if (status === 'idle') {
+    this.#status = status;
+    if (this.#status === 'idle') {
       this.#showButtons('call');
-    } else if (status === 'incoming') {
+    } else if (this.#status === 'incoming') {
       this.#showButtons('accept', 'reject');
-    } else if (status === 'inprogress') {
+    } else if (this.#status === 'inprogress') {
       this.#showButtons('hangup');
     }
 
     const statusEl = this.shadowRoot.querySelector('#status');
-    statusEl.innerText = `Status: ${status}`;
+    statusEl.innerText = `Status: ${this.#status}`;
   }
 
   #setupCallHandlers(call) {
