@@ -27,17 +27,16 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     const participant = this.shadowRoot.querySelector('#add-participant').value;
 
     if (participant === '') {
-      console.log('Please enter a validparticipant');
-    } else {
-      await fetch(
-        `/twilio-voice-basic-call-control/conferences/${
-          this.#conferenceSid
-        }/participants/add/${participant}`,
-        {
-          method: 'POST',
-        }
-      );
+      throw new Error('Please enter a valid participant');
     }
+    await fetch(
+      `/twilio-voice-basic-call-control/conferences/${
+        this.#conferenceSid
+      }/participants/add/${participant}`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   #handleCallMessageReceived(message) {
@@ -55,24 +54,26 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     const response = await this.#updateConferenceCall(callSid, {
       hold: shouldHold,
     });
-    if (response.status === 200) {
-      this.#showElement(`#${callSid}-hold`, !shouldHold);
-      this.#showElement(`#${callSid}-resume`, shouldHold);
-    } else {
+
+    if (response.status !== 200) {
       console.error('Unable to set hold: ', response.error);
+      return;
     }
+    this.#showElement(`#${callSid}-hold`, !shouldHold);
+    this.#showElement(`#${callSid}-resume`, shouldHold);
   }
 
   async #handleMute(shouldMute, callSid) {
     const response = await this.#updateConferenceCall(callSid, {
       muted: shouldMute,
     });
-    if (response.status === 200) {
-      this.#showElement(`#${callSid}-mute`, !shouldMute);
-      this.#showElement(`#${callSid}-unmute`, shouldMute);
-    } else {
+
+    if (response.status !== 200) {
       console.error('Unable to set mute: ', response.error);
+      return;
     }
+    this.#showElement(`#${callSid}-mute`, !shouldMute);
+    this.#showElement(`#${callSid}-unmute`, shouldMute);
   }
 
   #removeCallControlButtons() {
