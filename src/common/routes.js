@@ -53,7 +53,7 @@ export const postTwiml = ({ req, res, caller, callee }) => {
       startConferenceOnEnter: true,
       endConferenceOnExit: caller.endConferenceOnExit,
       statusCallback: `${callbackBaseURL}/${caller.componentUrl}/conference-events`,
-      statusCallbackEvent: 'join',
+      statusCallbackEvent: 'join, leave, mute, hold',
     },
     roomName
   );
@@ -71,12 +71,28 @@ export const postTwiml = ({ req, res, caller, callee }) => {
 };
 
 export const postConferenceEvents = async ({ req, res }) => {
-  const { ConferenceSid, StatusCallbackEvent } = req.body;
+  const {
+    CallSid,
+    ConferenceSid,
+    Hold,
+    Muted,
+    ParticipantLabel,
+    StatusCallbackEvent,
+  } = req.body;
 
-  if (StatusCallbackEvent === 'participant-join') {
+  if (
+    StatusCallbackEvent === 'participant-join' ||
+    'participant-mute' ||
+    'participant-unmute' ||
+    'participant-hold' ||
+    'participant-unhold' ||
+    'participant-leave'
+  ) {
     const participants = await client
       .conferences(ConferenceSid)
       .participants.list();
+
+    const isParticipantLeave = StatusCallbackEvent === 'participant-leave';
 
     // Send the conference sid and the other participants' callSids to any client leg.
     // The sids will be used to update the participant resource such as putting it on hold.
@@ -90,10 +106,15 @@ export const postConferenceEvents = async ({ req, res }) => {
               .userDefinedMessages.create({
                 content: JSON.stringify({
                   conferenceSid: ConferenceSid,
-                  callSid: otherParticipant.callSid,
-                  label: otherParticipant.label,
-                  muted: otherParticipant.muted,
-                  hold: otherParticipant.hold,
+                  callSid: isParticipantLeave
+                    ? CallSid
+                    : otherParticipant.callSid,
+                  label: isParticipantLeave
+                    ? ParticipantLabel
+                    : otherParticipant.label,
+                  muted: isParticipantLeave ? Muted : otherParticipant.muted,
+                  hold: isParticipantLeave ? Hold : otherParticipant.hold,
+                  remove: isParticipantLeave ? true : false,
                 }),
               });
           });

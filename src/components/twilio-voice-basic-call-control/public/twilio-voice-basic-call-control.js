@@ -42,7 +42,12 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   #handleCallMessageReceived(message) {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
-      const { callSid, conferenceSid, hold, label, muted } = content;
+      const { callSid, conferenceSid, hold, label, muted, remove } = content;
+      if (remove) {
+        this.#participants.delete(callSid);
+        this.#renderCallControlButtons();
+        return;
+      }
       this.#participants.set(callSid, { conferenceSid, hold, label, muted });
       this.#conferenceSid = content.conferenceSid;
       this.#showElement('#add-participant-container', true);
