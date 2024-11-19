@@ -8,7 +8,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     this.#render();
 
-    const twilioVoiceDialer = document.querySelector('twilio-voice-dialer');
+    const twilioVoiceDialer = this.shadowRoot.host.parentElement;
     twilioVoiceDialer.addEventListener('incoming', (e) => {
       const call = e.detail.call;
       this.#setCallHandlers(call);
