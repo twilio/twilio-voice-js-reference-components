@@ -18,7 +18,7 @@ const {
 } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 
-export const getToken = ({ req, res }) => {
+export const tokenHandler = (req, res) => {
   const identity = req.query.identity || defaultIdentity;
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
     identity,
@@ -33,7 +33,15 @@ export const getToken = ({ req, res }) => {
   res.send({ token: token.toJwt() });
 };
 
-export const postTwiml = ({ req, res, caller, callee }) => {
+export const twimlHandler = ({
+  req,
+  res,
+  callerLabel,
+  calleeLabel,
+  maxParticipants,
+  endConferenceOnExit,
+  componentUrl,
+}) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial();
 
@@ -48,11 +56,11 @@ export const postTwiml = ({ req, res, caller, callee }) => {
       // Label to identify this participant
       participantLabel: `${
         isPhoneNumber(req.body.From) ? 'number' : 'client'
-      }-${caller.label}`,
-      maxParticipants: caller.maxParticipants,
+      }-${callerLabel}`,
+      maxParticipants,
       startConferenceOnEnter: true,
-      endConferenceOnExit: caller.endConferenceOnExit,
-      statusCallback: `${callbackBaseURL}/${caller.componentUrl}/conference-events`,
+      endConferenceOnExit,
+      statusCallback: `${callbackBaseURL}/${componentUrl}/conference-events`,
       statusCallbackEvent: 'join, leave, mute, hold',
     },
     roomName
@@ -61,7 +69,7 @@ export const postTwiml = ({ req, res, caller, callee }) => {
   // Add the callee to the conference
   client.conferences(roomName).participants.create({
     // Label to identify this participant
-    label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-${callee.label}`,
+    label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-${calleeLabel}`,
     from: callerId,
     to: recipient,
     endConferenceOnExit: true,
@@ -70,7 +78,7 @@ export const postTwiml = ({ req, res, caller, callee }) => {
   res.header('Content-Type', 'text/xml').status(200).send(twiml.toString());
 };
 
-export const postConferenceEvents = async ({ req, res }) => {
+export const conferenceEventsHandler = async (req, res) => {
   const {
     CallSid,
     ConferenceSid,
@@ -80,14 +88,15 @@ export const postConferenceEvents = async ({ req, res }) => {
     StatusCallbackEvent,
   } = req.body;
 
-  if (
-    StatusCallbackEvent === 'participant-join' ||
-    'participant-mute' ||
-    'participant-unmute' ||
-    'participant-hold' ||
-    'participant-unhold' ||
-    'participant-leave'
-  ) {
+  const statusCallbackEvents = [
+    'participant-join',
+    'participant-mute',
+    'participant-unmute',
+    'participant-hold',
+    'participant-unhold',
+    'participant-leave',
+  ];
+  if (statusCallbackEvents.includes(StatusCallbackEvent)) {
     const participants = await client
       .conferences(ConferenceSid)
       .participants.list();
@@ -114,7 +123,7 @@ export const postConferenceEvents = async ({ req, res }) => {
                     : otherParticipant.label,
                   muted: isParticipantLeave ? Muted : otherParticipant.muted,
                   hold: isParticipantLeave ? Hold : otherParticipant.hold,
-                  remove: isParticipantLeave ? true : false,
+                  remove: isParticipantLeave,
                 }),
               });
           });

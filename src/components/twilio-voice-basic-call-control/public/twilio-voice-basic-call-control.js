@@ -32,9 +32,13 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     await fetch(
       `/twilio-voice-basic-call-control/conferences/${
         this.#conferenceSid
-      }/participants/add/${participant}`,
+      }/participants`,
       {
+        headers: {
+          'Content-Type': 'application/json',
+        },
         method: 'POST',
+        body: JSON.stringify({ to: participant }),
       }
     );
   }
