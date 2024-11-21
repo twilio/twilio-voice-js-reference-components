@@ -110,32 +110,6 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     `;
   }
 
-  #renderCallControlButton(options) {
-    const { name, callSid, shouldHide } = options;
-    const button = document.createElement('button');
-    button.innerHTML = name;
-    button.setAttribute('id', `${callSid}-${name}`);
-    button.style.display = shouldHide ? 'none' : 'inline-block';
-    switch (name) {
-      case 'hold':
-        button.addEventListener('click', () => this.#handleHold(true, callSid));
-        break;
-      case 'resume':
-        button.addEventListener('click', () =>
-          this.#handleHold(false, callSid)
-        );
-        break;
-      case 'mute':
-        button.addEventListener('click', () => this.#handleMute(true, callSid));
-        break;
-      case 'unmute':
-        button.addEventListener('click', () =>
-          this.#handleMute(false, callSid)
-        );
-    }
-    return button;
-  }
-
   #renderCallControlButtons() {
     this.#removeCallControlButtons();
     const component = this.shadowRoot.querySelector('#basic-call-control');
@@ -146,37 +120,46 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     for (const [callSid, content] of this.#participants) {
       const participantContainer = document.createElement('div');
 
-      const label = document.createElement('span');
-      label.innerHTML = `${content.label}: `;
-      participantContainer.appendChild(label);
+      participantContainer.innerHTML = `
+        <span>${content.label}: </span>
+        <button
+          id="${callSid}-hold"
+          style="display: ${content.hold ? 'none' : 'inline-block'}"
+        >
+          Hold
+        </button>
+        <button
+          id="${callSid}-resume"
+          style="display: ${!content.hold ? 'none' : 'inline-block'}"
+        >
+          Resume
+        </button>
+        <button
+          id="${callSid}-mute"
+          style="display: ${content.muted ? 'none' : 'inline-block'}"
+        >
+          Mute
+        </button>
+        <button
+          id="${callSid}-unmute"
+          style="display: ${!content.muted ? 'none' : 'inline-block'}"
+        >
+          Unmute
+        </button>
+      `;
 
-      const holdButton = this.#renderCallControlButton({
-        name: 'hold',
-        callSid,
-        shouldHide: content.hold,
-      });
-      participantContainer.appendChild(holdButton);
-
-      const resumeButton = this.#renderCallControlButton({
-        callSid,
-        name: 'resume',
-        shouldHide: !content.hold,
-      });
-      participantContainer.appendChild(resumeButton);
-
-      const muteButton = this.#renderCallControlButton({
-        callSid,
-        name: 'mute',
-        shouldHide: content.muted,
-      });
-      participantContainer.appendChild(muteButton);
-
-      const unMuteButton = this.#renderCallControlButton({
-        callSid,
-        name: 'unmute',
-        shouldHide: !content.muted,
-      });
-      participantContainer.appendChild(unMuteButton);
+      participantContainer
+        .querySelector(`#${callSid}-hold`)
+        .addEventListener('click', () => this.#handleHold(true, callSid));
+      participantContainer
+        .querySelector(`#${callSid}-resume`)
+        .addEventListener('click', () => this.#handleHold(false, callSid));
+      participantContainer
+        .querySelector(`#${callSid}-mute`)
+        .addEventListener('click', () => this.#handleMute(true, callSid));
+      participantContainer
+        .querySelector(`#${callSid}-unmute`)
+        .addEventListener('click', () => this.#handleMute(false, callSid));
 
       callControlButtons.appendChild(participantContainer);
     }
