@@ -18,6 +18,9 @@ const {
 } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 
+/**
+ * Generate a Twilio access token for the component.
+ */
 export const tokenHandler = (req, res) => {
   const identity = req.query.identity || defaultIdentity;
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
@@ -33,6 +36,9 @@ export const tokenHandler = (req, res) => {
   res.send({ token: token.toJwt() });
 };
 
+/**
+ * Handler for the Twilio Webhook, set in the User's Twilio Console.
+ */
 export const twimlHandler = ({
   req,
   res,
@@ -78,6 +84,9 @@ export const twimlHandler = ({
   res.header('Content-Type', 'text/xml').status(200).send(twiml.toString());
 };
 
+/**
+ * Handler for Twilio Conference statusCallback.
+ */
 export const conferenceEventsHandler = async (req, res) => {
   const {
     CallSid,
