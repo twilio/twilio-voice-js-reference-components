@@ -13,7 +13,7 @@ const {
   apiKeySid,
   apiKeySecret,
   callerId,
-  callbackBaseURL,
+  callbackBaseUrl,
   defaultIdentity,
 } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
@@ -65,7 +65,7 @@ export const twimlHandler = (req, res, options) => {
       maxParticipants,
       startConferenceOnEnter: true,
       endConferenceOnExit,
-      statusCallback: `${callbackBaseURL}/${componentUrl}/conference-events`,
+      statusCallback: `${callbackBaseUrl}/${componentUrl}/conference-events`,
       statusCallbackEvent: 'join, leave, mute, hold',
     },
     roomName
