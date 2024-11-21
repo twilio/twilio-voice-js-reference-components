@@ -16,15 +16,17 @@ router.get('/token', (req, res) => tokenHandler(req, res));
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
 router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
-  twimlHandler({
+  twimlHandler(
     req,
     res,
-    callerLabel: 'caller',
-    calleeLabel: 'callee',
-    maxParticipants: 2,
-    endConferenceOnExit: true,
-    componentUrl: 'twilio-voice-dialer',
-  })
+    {
+      callerLabel: 'caller',
+      calleeLabel: 'callee',
+      maxParticipants: 2,
+      endConferenceOnExit: true,
+      componentUrl: 'twilio-voice-dialer',
+    }
+  )
 );
 
 // Validate incoming Twilio requests

@@ -39,15 +39,14 @@ export const tokenHandler = (req, res) => {
 /**
  * Handler for the TwiML App Webhook, set in the User's Twilio Console.
  */
-export const twimlHandler = ({
-  req,
-  res,
-  callerLabel,
-  calleeLabel,
-  maxParticipants,
-  endConferenceOnExit,
-  componentUrl,
-}) => {
+export const twimlHandler = (req, res, options) => {
+  const {
+    callerLabel,
+    calleeLabel,
+    maxParticipants,
+    endConferenceOnExit,
+    componentUrl,
+  } = options;
   const twiml = new VoiceResponse();
   const dial = twiml.dial();
 
