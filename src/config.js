@@ -6,13 +6,13 @@ const apiKeySid = process.env.API_KEY_SID;
 const apiKeySecret = process.env.API_KEY_SECRET;
 const authToken = process.env.AUTH_TOKEN;
 const callerId = process.env.CALLER_ID;
-const callbackBaseURL = process.env.CALLBACK_BASE_URL;
+const callbackBaseUrl = process.env.CALLBACK_BASE_URL;
 const defaultIdentity = process.env.DEFAULT_IDENTITY;
 
-if (!appSid || !accountSid || !apiKeySid || !apiKeySecret || !authToken || !callerId || !callbackBaseURL || !defaultIdentity) {
+if (!appSid || !accountSid || !apiKeySid || !apiKeySecret || !authToken || !callerId || !callbackBaseUrl || !defaultIdentity) {
   throw new Error('Missing environment variables.');
 }
 
-const config = { port, appSid, accountSid, apiKeySid, apiKeySecret, authToken, callerId, callbackBaseURL, defaultIdentity };
+const config = { port, appSid, accountSid, apiKeySid, apiKeySecret, authToken, callerId, callbackBaseUrl, defaultIdentity };
 
 export default config;
