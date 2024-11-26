@@ -68,4 +68,17 @@ router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res
   res.sendStatus(200);
 });
 
+router.delete('/conferences/:conferenceSid/participants/:callSid', async (req, res) => {
+  const { callSid, conferenceSid } = req.params;
+
+  // Delete a Participant resource
+  // https://www.twilio.com/docs/voice/api/conference-participant-resource#delete-a-participant-resource
+  await client
+    .conferences(conferenceSid)
+    .participants(callSid)
+    .remove();
+
+  res.sendStatus(200);
+});
+
 export default router;
