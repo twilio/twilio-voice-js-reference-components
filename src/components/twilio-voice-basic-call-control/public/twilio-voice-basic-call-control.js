@@ -86,14 +86,11 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   }
 
   async #handleRemoveParticipant(callSid) {
-    const response = await await fetch(
+    const response = await fetch(
       `/twilio-voice-basic-call-control/conferences/${
         this.#conferenceSid
       }/participants/${callSid}`,
       {
-        headers: {
-          'Content-Type': 'application/json',
-        },
         method: 'DELETE',
       }
     );
