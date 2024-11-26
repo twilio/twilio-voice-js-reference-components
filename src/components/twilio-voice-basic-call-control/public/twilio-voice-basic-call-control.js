@@ -214,8 +214,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       : 'none';
   }
 
-  async #updateConference(callSid, params) {
-    return await fetch(
+  #updateConference(callSid, params) {
+    return fetch(
       `/twilio-voice-basic-call-control/conferences/${
         this.#conferenceSid
       }/participants/${callSid}`,
