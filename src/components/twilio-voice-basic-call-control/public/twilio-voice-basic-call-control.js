@@ -60,7 +60,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   }
 
   async #handleHold(shouldHold, callSid) {
-    const response = await this.#updateConferenceCall(callSid, {
+    const response = await this.#updateConference(callSid, {
       hold: shouldHold,
     });
 
@@ -73,7 +73,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   }
 
   async #handleMute(shouldMute, callSid) {
-    const response = await this.#updateConferenceCall(callSid, {
+    const response = await this.#updateConference(callSid, {
       muted: shouldMute,
     });
 
@@ -83,6 +83,21 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     }
     this.#showElement(`#${callSid}-mute`, !shouldMute);
     this.#showElement(`#${callSid}-unmute`, shouldMute);
+  }
+
+  async #handleRemoveParticipant(callSid) {
+    const response = await fetch(
+      `/twilio-voice-basic-call-control/conferences/${
+        this.#conferenceSid
+      }/participants/${callSid}`,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    if (response.status !== 200) {
+      console.error('Unable to remove participant: ', response.error);
+    }
   }
 
   #removeCallControlButtons() {
@@ -146,6 +161,11 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
         >
           Unmute
         </button>
+        <button
+          id="${callSid}-remove"
+        >
+          Remove Participant
+        </button>
       `;
 
       participantContainer
@@ -160,6 +180,11 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       participantContainer
         .querySelector(`#${callSid}-unmute`)
         .addEventListener('click', () => this.#handleMute(false, callSid));
+      participantContainer
+        .querySelector(`#${callSid}-remove`)
+        .addEventListener('click', () =>
+          this.#handleRemoveParticipant(callSid)
+        );
 
       callControlButtons.appendChild(participantContainer);
     }
@@ -189,8 +214,8 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       : 'none';
   }
 
-  async #updateConferenceCall(callSid, params) {
-    return await fetch(
+  #updateConference(callSid, params) {
+    return fetch(
       `/twilio-voice-basic-call-control/conferences/${
         this.#conferenceSid
       }/participants/${callSid}`,
