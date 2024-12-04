@@ -116,7 +116,8 @@ export const conferenceEventsHandler = async (req, res) => {
         if (StatusCallbackEvent === 'participant-leave') {
           await client
             .calls(currentParticipant.callSid)
-            .userDefinedMessages.create({
+            .userDefinedMessages
+            .create({
               content: JSON.stringify({
                 conferenceSid: ConferenceSid,
                 callSid: CallSid,
@@ -132,7 +133,8 @@ export const conferenceEventsHandler = async (req, res) => {
             .forEach(async (otherParticipant) => {
               await client
                 .calls(currentParticipant.callSid)
-                .userDefinedMessages.create({
+                .userDefinedMessages
+                .create({
                   content: JSON.stringify({
                     conferenceSid: ConferenceSid,
                     callSid: otherParticipant.callSid,
