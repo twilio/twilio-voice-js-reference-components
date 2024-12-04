@@ -21,15 +21,18 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     this.shadowRoot
       .querySelector('#add-conference')
       .addEventListener('click', () => this.#handleAddConference());
+    this.shadowRoot
+      .querySelector('#forward')
+      .addEventListener('click', () => this.#handleForwardCall());
   }
 
-  async #handleAddConference() {
-    const participant = this.shadowRoot.querySelector('#add-participant').value;
-
+  #addConference() {
+    const participant = this.shadowRoot.querySelector('#participant').value;
     if (participant === '') {
       throw new Error('Please enter a valid participant');
     }
-    await fetch(
+
+    return fetch(
       `/twilio-voice-basic-call-control/conferences/${
         this.#conferenceSid
       }/participants`,
@@ -41,6 +44,13 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
         body: JSON.stringify({ to: participant }),
       }
     );
+  }
+
+  async #handleAddConference() {
+    const response = await this.#addConference();
+    if (response.status !== 200) {
+      console.error('Unable to add participant to call: ', respone.error);
+    }
   }
 
   #handleCallMessageReceived(message) {
@@ -57,6 +67,16 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
       this.#showElement('#add-participant-container', true);
       this.#renderCallControlButtons();
     }
+  }
+
+  async #handleForwardCall() {
+    const response = await this.#addConference();
+    if (response.status !== 200) {
+      console.error('Unable to forward call: ', response.error);
+      return;
+    }
+
+    this.#call.disconnect();
   }
 
   async #handleHold(shouldHold, callSid) {
@@ -115,12 +135,13 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
         <div id="add-participant-container" style="display: none;">
           <input
             type="text"
-            placeholder="Add participant"
-            id="add-participant"
+            placeholder="Participant"
+            id="participant"
             value=""
           />
           <button id="add-conference">Add</button>
-        <div>
+          <button id="forward">Forward</button>
+        </div>
       </div>
     `;
   }
