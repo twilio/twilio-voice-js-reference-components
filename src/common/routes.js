@@ -113,6 +113,9 @@ export const conferenceEventsHandler = async (req, res) => {
     // The sids will be used to update the participant resource such as putting it on hold.
     participants.forEach(async (currentParticipant) => {
       if (currentParticipant.label.split('-')[0] === 'client') {
+        // When the StatusCallbackEvent is 'participant-leave', the req.body contains data
+        // from the participant that left the conference. Send the callSid and data of the
+        // participant that left the conference to all current client legs.
         if (StatusCallbackEvent === 'participant-leave') {
           await client
             .calls(currentParticipant.callSid)
