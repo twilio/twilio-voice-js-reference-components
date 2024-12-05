@@ -109,32 +109,46 @@ export const conferenceEventsHandler = async (req, res) => {
       .conferences(ConferenceSid)
       .participants.list();
 
-    const isParticipantLeave = StatusCallbackEvent === 'participant-leave';
-
     // Send the conference sid and the other participants' callSids to any client leg.
     // The sids will be used to update the participant resource such as putting it on hold.
-    participants.forEach((currentParticipant) => {
+    participants.forEach(async (currentParticipant) => {
       if (currentParticipant.label.split('-')[0] === 'client') {
-        participants
-          .filter((p) => p.callSid !== currentParticipant.callSid)
-          .forEach(async (otherParticipant) => {
-            await client
-              .calls(currentParticipant.callSid)
-              .userDefinedMessages.create({
-                content: JSON.stringify({
-                  conferenceSid: ConferenceSid,
-                  callSid: isParticipantLeave
-                    ? CallSid
-                    : otherParticipant.callSid,
-                  label: isParticipantLeave
-                    ? ParticipantLabel
-                    : otherParticipant.label,
-                  muted: isParticipantLeave ? Muted : otherParticipant.muted,
-                  hold: isParticipantLeave ? Hold : otherParticipant.hold,
-                  remove: isParticipantLeave,
-                }),
-              });
-          });
+        // When the StatusCallbackEvent is 'participant-leave', the req.body contains data
+        // from the participant that left the conference. Send the callSid and data of the
+        // participant that left the conference to all current client legs.
+        if (StatusCallbackEvent === 'participant-leave') {
+          await client
+            .calls(currentParticipant.callSid)
+            .userDefinedMessages
+            .create({
+              content: JSON.stringify({
+                conferenceSid: ConferenceSid,
+                callSid: CallSid,
+                label: ParticipantLabel,
+                muted: Muted,
+                hold: Hold,
+                remove: true,
+              }),
+            });
+        } else {
+          participants
+            .filter((p) => p.callSid !== currentParticipant.callSid)
+            .forEach(async (otherParticipant) => {
+              await client
+                .calls(currentParticipant.callSid)
+                .userDefinedMessages
+                .create({
+                  content: JSON.stringify({
+                    conferenceSid: ConferenceSid,
+                    callSid: otherParticipant.callSid,
+                    label: otherParticipant.label,
+                    muted: otherParticipant.muted,
+                    hold: otherParticipant.hold,
+                    remove: false,
+                  }),
+                });
+            });
+        }
       }
     });
   }
