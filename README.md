@@ -56,7 +56,7 @@ npm install
 npm start
 ```
 
-2. Access the following components under the following urls.
+2. Access the following components under the following URLs.
 
 - Dialer related components, access [http://localhost:3030/twilio-voice-dialer](http://localhost:3030/twilio-voice-dialer).
 - Call control related components, access [http://localhost:3030/twilio-voice-basic-call-control](http://localhost:3030/twilio-voice-basic-call-control).
