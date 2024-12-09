@@ -35,7 +35,8 @@ AUTH_TOKEN=xxxxxxxxxxxxxx
 # Caller ID
 CALLER_ID=+11234567890
 
-# Callback base URL
+# If developing locally and running the Reference Components locally, consider using a tool like ngrok to proxy the server endpoints. Once proxied, change CALLBACK_BASE_URL to the ngrok URL endpoints.
+# See more info about ngrok  by visiting https://ngrok.com.
 CALLBACK_BASE_URL=https://foo.ngrok.dev
 
 # Default identity to use
@@ -58,5 +59,5 @@ npm start
 
 2. Access the following components under the following URLs.
 
-- Dialer related components, access [http://localhost:3030/twilio-voice-dialer](http://localhost:3030/twilio-voice-dialer).
-- Call control related components, access [http://localhost:3030/twilio-voice-basic-call-control](http://localhost:3030/twilio-voice-basic-call-control).
+- Dialer related components, access [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
+- Call control related components, access [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
