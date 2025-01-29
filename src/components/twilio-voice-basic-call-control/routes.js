@@ -29,6 +29,7 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
       // Allow agent1 to drop from call, while agent2 and customer continue call.
       endConferenceOnExit: false,
       componentUrl: 'twilio-voice-basic-call-control',
+      statusCallbackEvent: 'join, leave, mute, hold',
     }
   )
 );
@@ -36,7 +37,21 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
 router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) =>
-  conferenceEventsHandler(req, res)
+  conferenceEventsHandler(
+    req,
+    res,
+    {
+      componentUrl: 'twilio-voice-basic-call-control',
+      statusCallbackEvents: [
+        'participant-join',
+        'participant-mute',
+        'participant-unmute',
+        'participant-hold',
+        'participant-unhold',
+        'participant-leave',
+      ],
+    }
+  )
 );
 
 router.post('/conferences/:conferenceSid/participants', async (req, res) => {
