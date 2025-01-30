@@ -9,6 +9,7 @@ import {
 
 const router = Router();
 const { authToken } = config;
+const componentUrl = 'twilio-voice-dialer';
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => tokenHandler(req, res));
@@ -19,25 +20,19 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
   twimlHandler(
     req,
     res,
-    {
-      callerLabel: 'caller',
-      calleeLabel: 'callee',
-      maxParticipants: 2,
-      endConferenceOnExit: true,
-      componentUrl: 'twilio-voice-dialer',
-    }
+    componentUrl,
+    {}
   )
 );
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) =>
+router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
   conferenceEventsHandler(
     req,
     res,
-    {
-      componentUrl: 'twilio-voice-dialer',
-    }
+    componentUrl,
+    {}
   )
 );
 

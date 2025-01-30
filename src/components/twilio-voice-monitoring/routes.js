@@ -9,33 +9,32 @@ import {
 
 const router = Router();
 const { authToken } = config;
+const componentUrl = 'twilio-voice-monitoring';
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => tokenHandler(req, res));
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken),
-  (req, res) => 
-    twimlHandler(req, res, {
-      callerLabel: 'caller',
-      calleeLabel: 'callee',
-      maxParticipants: 2,
-      endConferenceOnExit: true,
-      componentUrl: 'twilio-voice-monitoring',
+router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) => 
+  twimlHandler(
+    req,
+    res,
+    componentUrl,
+    {
       statusCallbackEvent: 'start, end, join, leave, mute, hold, modify, speaker, announcement',
-    })
+    }
+  )
 );
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) =>
+router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
   conferenceEventsHandler(
     req,
     res,
-    {
-      componentUrl: 'twilio-voice-monitoring'
-    }
+    componentUrl,
+    {}
   )
 );
 

@@ -39,13 +39,12 @@ export const tokenHandler = (req, res) => {
 /**
  * Handler for the TwiML App Webhook, set in the User's Twilio Console.
  */
-export const twimlHandler = (req, res, options) => {
+export const twimlHandler = (req, res, componentUrl, options) => {
   const {
-    callerLabel,
-    calleeLabel,
-    maxParticipants,
-    endConferenceOnExit,
-    componentUrl,
+    callerLabel = 'caller',
+    calleeLabel = 'callee',
+    maxParticipants = 2,
+    endConferenceOnExit = true,
     statusCallbackEvent = '',
   } = options;
   const twiml = new VoiceResponse();
@@ -87,7 +86,7 @@ export const twimlHandler = (req, res, options) => {
 /**
  * Handler for the Twilio Conference statusCallback.
  */
-export const conferenceEventsHandler = async (req, res, options) => {
+export const conferenceEventsHandler = async (req, res, componentUrl, options) => {
   const {
     CallSid,
     ConferenceSid,
@@ -97,7 +96,6 @@ export const conferenceEventsHandler = async (req, res, options) => {
     StatusCallbackEvent,
   } = req.body;
   const {
-    componentUrl,
     statusCallbackEvents = [],
   } = options;
 
@@ -107,7 +105,7 @@ export const conferenceEventsHandler = async (req, res, options) => {
       shouldSendMessage = false;
       break;
     case 'twilio-voice-basic-call-control':
-      shouldSendMessage = !!statusCallbackEvents.includes(StatusCallbackEvent);
+      shouldSendMessage = statusCallbackEvents.includes(StatusCallbackEvent);
       break;
     case 'twilio-voice-monitoring':
       shouldSendMessage = true;
