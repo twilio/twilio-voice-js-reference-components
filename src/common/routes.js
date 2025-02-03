@@ -39,7 +39,7 @@ export const tokenHandler = (req, res) => {
 /**
  * Handler for the TwiML App Webhook, set in the User's Twilio Console.
  */
-export const twimlHandler = (req, res, componentUrl, options) => {
+export const twimlHandler = (req, res, componentUrl, options = {}) => {
   const {
     callerLabel = 'caller',
     calleeLabel = 'callee',
@@ -86,7 +86,7 @@ export const twimlHandler = (req, res, componentUrl, options) => {
 /**
  * Handler for the Twilio Conference statusCallback.
  */
-export const conferenceEventsHandler = async (req, res, componentUrl, options) => {
+export const conferenceEventsHandler = async (req, res, componentUrl, options = {}) => {
   const {
     CallSid,
     ConferenceSid,

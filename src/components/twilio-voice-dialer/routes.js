@@ -20,8 +20,7 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
   twimlHandler(
     req,
     res,
-    componentUrl,
-    {}
+    componentUrl
   )
 );
 
@@ -31,8 +30,7 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
   conferenceEventsHandler(
     req,
     res,
-    componentUrl,
-    {}
+    componentUrl
   )
 );
 

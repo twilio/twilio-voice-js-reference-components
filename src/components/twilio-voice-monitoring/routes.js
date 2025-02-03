@@ -33,8 +33,7 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
   conferenceEventsHandler(
     req,
     res,
-    componentUrl,
-    {}
+    componentUrl
   )
 );
 
