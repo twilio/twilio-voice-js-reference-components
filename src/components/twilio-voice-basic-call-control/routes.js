@@ -11,6 +11,7 @@ import {
 const router = Router();
 const { accountSid, apiKeySid, apiKeySecret, authToken, callerId } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
+const componentUrl = 'twilio-voice-basic-call-control'; 
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => tokenHandler(req, res));
@@ -21,6 +22,7 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
   twimlHandler(
     req,
     res,
+    componentUrl,
     {
       callerLabel: 'agent1',
       calleeLabel: 'customer',
@@ -28,15 +30,29 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
       maxParticipants: 3,
       // Allow agent1 to drop from call, while agent2 and customer continue call.
       endConferenceOnExit: false,
-      componentUrl: 'twilio-voice-basic-call-control',
+      statusCallbackEvent: 'join, leave, mute, hold',
     }
   )
 );
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) =>
-  conferenceEventsHandler(req, res)
+router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
+  conferenceEventsHandler(
+    req,
+    res,
+    componentUrl,
+    {
+      statusCallbackEvents: [
+        'participant-join',
+        'participant-mute',
+        'participant-unmute',
+        'participant-hold',
+        'participant-unhold',
+        'participant-leave',
+      ],
+    }
+  )
 );
 
 router.post('/conferences/:conferenceSid/participants', async (req, res) => {

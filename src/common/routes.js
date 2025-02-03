@@ -39,13 +39,13 @@ export const tokenHandler = (req, res) => {
 /**
  * Handler for the TwiML App Webhook, set in the User's Twilio Console.
  */
-export const twimlHandler = (req, res, options) => {
+export const twimlHandler = (req, res, componentUrl, options = {}) => {
   const {
-    callerLabel,
-    calleeLabel,
-    maxParticipants,
-    endConferenceOnExit,
-    componentUrl,
+    callerLabel = 'caller',
+    calleeLabel = 'callee',
+    maxParticipants = 2,
+    endConferenceOnExit = true,
+    statusCallbackEvent = '',
   } = options;
   const twiml = new VoiceResponse();
   const dial = twiml.dial();
@@ -66,7 +66,7 @@ export const twimlHandler = (req, res, options) => {
       startConferenceOnEnter: true,
       endConferenceOnExit,
       statusCallback: `${callbackBaseUrl}/${componentUrl}/conference-events`,
-      statusCallbackEvent: 'join, leave, mute, hold',
+      statusCallbackEvent,
     },
     roomName
   );
@@ -86,7 +86,7 @@ export const twimlHandler = (req, res, options) => {
 /**
  * Handler for the Twilio Conference statusCallback.
  */
-export const conferenceEventsHandler = async (req, res) => {
+export const conferenceEventsHandler = async (req, res, componentUrl, options = {}) => {
   const {
     CallSid,
     ConferenceSid,
@@ -95,16 +95,26 @@ export const conferenceEventsHandler = async (req, res) => {
     ParticipantLabel,
     StatusCallbackEvent,
   } = req.body;
+  const {
+    statusCallbackEvents = [],
+  } = options;
 
-  const statusCallbackEvents = [
-    'participant-join',
-    'participant-mute',
-    'participant-unmute',
-    'participant-hold',
-    'participant-unhold',
-    'participant-leave',
-  ];
-  if (statusCallbackEvents.includes(StatusCallbackEvent)) {
+  let shouldSendMessage;
+  switch (componentUrl) {
+    case 'twilio-voice-dialer':
+      shouldSendMessage = false;
+      break;
+    case 'twilio-voice-basic-call-control':
+      shouldSendMessage = statusCallbackEvents.includes(StatusCallbackEvent);
+      break;
+    case 'twilio-voice-monitoring':
+      shouldSendMessage = true;
+      break;
+    default:
+      shouldSendMessage = false;
+  }
+
+  if (shouldSendMessage) {
     const participants = await client
       .conferences(ConferenceSid)
       .participants.list();
@@ -128,6 +138,7 @@ export const conferenceEventsHandler = async (req, res) => {
                 muted: Muted,
                 hold: Hold,
                 remove: true,
+                statusCallbackEvent: StatusCallbackEvent,
               }),
             });
         } else {
@@ -145,6 +156,7 @@ export const conferenceEventsHandler = async (req, res) => {
                     muted: otherParticipant.muted,
                     hold: otherParticipant.hold,
                     remove: false,
+                    statusCallbackEvent: StatusCallbackEvent,
                   }),
                 });
             });

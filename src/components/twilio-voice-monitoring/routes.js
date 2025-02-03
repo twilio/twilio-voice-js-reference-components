@@ -9,18 +9,21 @@ import {
 
 const router = Router();
 const { authToken } = config;
-const componentUrl = 'twilio-voice-dialer';
+const componentUrl = 'twilio-voice-monitoring';
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => tokenHandler(req, res));
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
+router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) => 
   twimlHandler(
     req,
     res,
-    componentUrl
+    componentUrl,
+    {
+      statusCallbackEvent: 'start, end, join, leave, mute, hold, modify, speaker, announcement',
+    }
   )
 );
 
