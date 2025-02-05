@@ -64,6 +64,14 @@ class TwilioVoiceMonitoring extends HTMLElement {
     this.#call.on('messageReceived', (message) =>
       this.#handleCallMessageReceived(message)
     );
+    this.#call.on('warning', (warningName) => {
+      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
+      this.#log('WARNING', `${warningName}`);
+    });
+    this.#call.on('warning-cleared', (warningName) => {
+      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-cleared-event
+      this.#log('INFO', `Warning-cleared - ${warningName}`);
+    });
   }
 }
 
