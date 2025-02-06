@@ -1,5 +1,6 @@
 class TwilioVoiceMonitoring extends HTMLElement {
   #call;
+  #callSid;
   #monitorLog;
 
   constructor() {
@@ -54,10 +55,14 @@ class TwilioVoiceMonitoring extends HTMLElement {
 
   #reset = () => {
     this.#call = undefined;
+    this.#callSid = undefined;
   };
 
   #setCallHandlers(call) {
     this.#call = call;
+    this.#call.on('accept', () => {
+      this.#callSid = this.#call.parameters.CallSid;
+    });
     this.#call.on('disconnect', this.#reset);
     this.#call.on('cancel', this.#reset);
     this.#call.on('reject', this.#reset);
@@ -66,11 +71,20 @@ class TwilioVoiceMonitoring extends HTMLElement {
     );
     this.#call.on('warning', (warningName) => {
       // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
-      this.#log('WARNING', `${warningName}`);
+      const warning = {
+        callSid: this.#callSid,
+        warningName,
+      };
+      this.#log('WARNING', JSON.stringify(warning, null, 2));
     });
     this.#call.on('warning-cleared', (warningName) => {
       // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-cleared-event
-      this.#log('INFO', `Warning-cleared - ${warningName}`);
+      const warningCleared = {
+        event: 'warning-cleared',
+        callSid: this.#callSid,
+        warningName,
+      };
+      this.#log('INFO', JSON.stringify(warningCleared, null, 2));
     });
   }
 }
