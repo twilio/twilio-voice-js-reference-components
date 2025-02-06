@@ -24,7 +24,12 @@ class TwilioVoiceMonitoring extends HTMLElement {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
       const { label, statusCallbackEvent } = content;
-      this.#log('STATUS', `${label} - ${statusCallbackEvent}`);
+      const status = {
+        event: 'status',
+        label,
+        statusCallbackEvent,
+      };
+      this.#log('INFO', JSON.stringify(status, null, 2));
     }
   }
 
