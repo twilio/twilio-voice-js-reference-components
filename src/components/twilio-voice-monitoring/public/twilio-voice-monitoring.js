@@ -24,12 +24,12 @@ class TwilioVoiceMonitoring extends HTMLElement {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
       const { label, statusCallbackEvent } = content;
-      const status = {
+      const statusLog = {
         event: 'status',
         label,
         statusCallbackEvent,
       };
-      this.#log('INFO', JSON.stringify(status, null, 2));
+      this.#log('INFO', JSON.stringify(statusLog, null, 2));
     }
   }
 
@@ -76,20 +76,20 @@ class TwilioVoiceMonitoring extends HTMLElement {
     );
     this.#call.on('warning', (warningName) => {
       // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
-      const warning = {
+      const warningLog = {
         callSid: this.#callSid,
         warningName,
       };
-      this.#log('WARNING', JSON.stringify(warning, null, 2));
+      this.#log('WARNING', JSON.stringify(warningLog, null, 2));
     });
     this.#call.on('warning-cleared', (warningName) => {
       // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-cleared-event
-      const warningCleared = {
+      const warningClearedLog = {
         event: 'warning-cleared',
         callSid: this.#callSid,
         warningName,
       };
-      this.#log('INFO', JSON.stringify(warningCleared, null, 2));
+      this.#log('INFO', JSON.stringify(warningClearedLog, null, 2));
     });
   }
 }
