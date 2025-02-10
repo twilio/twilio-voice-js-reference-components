@@ -1,5 +1,6 @@
 class TwilioVoiceMonitoring extends HTMLElement {
   #call;
+  #callSid;
   #monitorLog;
 
   constructor() {
@@ -23,7 +24,12 @@ class TwilioVoiceMonitoring extends HTMLElement {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
       const { label, statusCallbackEvent } = content;
-      this.#log('STATUS', `${label} - ${statusCallbackEvent}`);
+      const statusLog = {
+        event: 'status',
+        label,
+        statusCallbackEvent,
+      };
+      this.#log('INFO', JSON.stringify(statusLog, null, 2));
     }
   }
 
@@ -54,16 +60,37 @@ class TwilioVoiceMonitoring extends HTMLElement {
 
   #reset = () => {
     this.#call = undefined;
+    this.#callSid = undefined;
   };
 
   #setCallHandlers(call) {
     this.#call = call;
+    this.#call.on('accept', () => {
+      this.#callSid = this.#call.parameters.CallSid;
+    });
     this.#call.on('disconnect', this.#reset);
     this.#call.on('cancel', this.#reset);
     this.#call.on('reject', this.#reset);
     this.#call.on('messageReceived', (message) =>
       this.#handleCallMessageReceived(message)
     );
+    this.#call.on('warning', (warningName) => {
+      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
+      const warningLog = {
+        callSid: this.#callSid,
+        warningName,
+      };
+      this.#log('WARNING', JSON.stringify(warningLog, null, 2));
+    });
+    this.#call.on('warning-cleared', (warningName) => {
+      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-cleared-event
+      const warningClearedLog = {
+        event: 'warning-cleared',
+        callSid: this.#callSid,
+        warningName,
+      };
+      this.#log('INFO', JSON.stringify(warningClearedLog, null, 2));
+    });
   }
 }
 
