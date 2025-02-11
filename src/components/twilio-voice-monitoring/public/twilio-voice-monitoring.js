@@ -74,6 +74,15 @@ class TwilioVoiceMonitoring extends HTMLElement {
     this.#call.on('messageReceived', (message) =>
       this.#handleCallMessageReceived(message)
     );
+    this.#call.on('error', (error) => {
+      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#error-event
+      const errorLog = {
+        callSid: this.#callSid,
+        code: error.code,
+        message: error.message,
+      };
+      this.#log('ERROR', JSON.stringify(errorLog, null, 2));
+    });
     this.#call.on('warning', (warningName) => {
       // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
       const warningLog = {
