@@ -33,6 +33,34 @@ class TwilioVoiceMonitoring extends HTMLElement {
     }
   }
 
+  #handleQualityWarnings(warningName) {
+    // Network Quality Warnings
+    // https://www.twilio.com/docs/voice/voice-insights/api/call/details-sdk-call-quality-events#network-warnings
+    const networkWarnings = [
+      'high-rtt',
+      'low-mos',
+      'high-jitter',
+      'high-packet-loss',
+      'high-packets-lost-fraction',
+      'low-bytes-received',
+      'low-bytes-sent',
+      'ice-connectivity-lost',
+    ];
+    if (warningName.includes(networkWarnings)) {
+      // Notify the agent that they might be encountering one-way or silent audio
+    }
+
+    // Audio Quality Warnings
+    // https://www.twilio.com/docs/voice/voice-insights/api/call/details-sdk-call-quality-events#audio-warnings
+    if (warningName === 'constant-audio-input-level') {
+      // Notify the agent the sdk is unable to detect from mic, therefore
+      // the other end of the call may be unable to hear them
+    } else if (warningName === 'constant-audio-output-level') {
+      // Notify the agent the sdk is unable to detect an output speaker/headset,
+      // therefore the agent may be unable to hear audio from the call
+    }
+  }
+
   #log(type, msg) {
     const p = document.createElement('p');
     p.innerHTML = `${type}: ${msg}`;
@@ -84,6 +112,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
       this.#log('ERROR', JSON.stringify(errorLog, null, 2));
     });
     this.#call.on('warning', (warningName) => {
+      this.#handleQualityWarnings(warningName);
       // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
       const warningLog = {
         callSid: this.#callSid,
