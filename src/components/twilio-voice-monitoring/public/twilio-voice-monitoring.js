@@ -37,21 +37,21 @@ class TwilioVoiceMonitoring extends HTMLElement {
     // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
     const warningLog = {
       callSid: this.#callSid,
-      warningName,
       category: 'General',
+      warningName,
     };
 
     // Network Quality Warnings
     // https://www.twilio.com/docs/voice/voice-insights/api/call/details-sdk-call-quality-events#network-warnings
     const networkWarnings = [
       'high-rtt',
-      'low-mos',
       'high-jitter',
       'high-packet-loss',
       'high-packets-lost-fraction',
+      'ice-connectivity-lost',
       'low-bytes-received',
       'low-bytes-sent',
-      'ice-connectivity-lost',
+      'low-mos',
     ];
     if (networkWarnings.includes(warningName)) {
       // Notify the agent that they might be encountering one-way or silent audio
