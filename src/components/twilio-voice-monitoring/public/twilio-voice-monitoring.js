@@ -33,7 +33,14 @@ class TwilioVoiceMonitoring extends HTMLElement {
     }
   }
 
-  #handleQualityWarnings(warningName) {
+  #handleWarning(warningName) {
+    // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
+    const warningLog = {
+      callSid: this.#callSid,
+      warningName,
+      category: 'General',
+    };
+
     // Network Quality Warnings
     // https://www.twilio.com/docs/voice/voice-insights/api/call/details-sdk-call-quality-events#network-warnings
     const networkWarnings = [
@@ -46,8 +53,9 @@ class TwilioVoiceMonitoring extends HTMLElement {
       'low-bytes-sent',
       'ice-connectivity-lost',
     ];
-    if (warningName.includes(networkWarnings)) {
+    if (networkWarnings.includes(warningName)) {
       // Notify the agent that they might be encountering one-way or silent audio
+      warningLog.category = 'Network';
     }
 
     // Audio Quality Warnings
@@ -55,10 +63,14 @@ class TwilioVoiceMonitoring extends HTMLElement {
     if (warningName === 'constant-audio-input-level') {
       // Notify the agent the sdk is unable to detect from mic, therefore
       // the other end of the call may be unable to hear them
+      warningLog.category = 'Audio';
     } else if (warningName === 'constant-audio-output-level') {
       // Notify the agent the sdk is unable to detect an output speaker/headset,
       // therefore the agent may be unable to hear audio from the call
+      warningLog.category = 'Audio';
     }
+
+    this.#log('WARNING', JSON.stringify(warningLog, null, 2));
   }
 
   #log(type, msg) {
@@ -112,13 +124,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
       this.#log('ERROR', JSON.stringify(errorLog, null, 2));
     });
     this.#call.on('warning', (warningName) => {
-      this.#handleQualityWarnings(warningName);
-      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
-      const warningLog = {
-        callSid: this.#callSid,
-        warningName,
-      };
-      this.#log('WARNING', JSON.stringify(warningLog, null, 2));
+      this.#handleWarning(warningName);
     });
     this.#call.on('warning-cleared', (warningName) => {
       // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-cleared-event
