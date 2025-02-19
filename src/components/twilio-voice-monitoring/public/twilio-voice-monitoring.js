@@ -35,14 +35,10 @@ class TwilioVoiceMonitoring extends HTMLElement {
 
   #handleWarning(warningName) {
     // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
-    const warningLog = {
-      callSid: this.#callSid,
-      category: 'General',
-      warningName,
-    };
 
     // Network Quality Warnings
     // https://www.twilio.com/docs/voice/voice-insights/api/call/details-sdk-call-quality-events#network-warnings
+    // Notify the agent that they might be encountering one-way or silent audio
     const networkWarnings = [
       'high-rtt',
       'high-jitter',
@@ -53,22 +49,28 @@ class TwilioVoiceMonitoring extends HTMLElement {
       'low-bytes-sent',
       'low-mos',
     ];
-    if (networkWarnings.includes(warningName)) {
-      // Notify the agent that they might be encountering one-way or silent audio
-      warningLog.category = 'Network';
-    }
 
     // Audio Quality Warnings
     // https://www.twilio.com/docs/voice/voice-insights/api/call/details-sdk-call-quality-events#audio-warnings
-    if (warningName === 'constant-audio-input-level') {
+    const audioWarnings = [
+      'constant-audio-input-level',
       // Notify the agent the sdk is unable to detect from mic, therefore
       // the other end of the call may be unable to hear them
-      warningLog.category = 'Audio';
-    } else if (warningName === 'constant-audio-output-level') {
+      'constant-audio-output-level',
       // Notify the agent the sdk is unable to detect an output speaker/headset,
       // therefore the agent may be unable to hear audio from the call
-      warningLog.category = 'Audio';
-    }
+    ];
+
+    const category =
+      networkWarnings.includes(warningName) ? 'Network' :
+      audioWarnings.includes(warningName) ? 'Audio' :
+      'General';
+
+    const warningLog = {
+      callSid: this.#callSid,
+      category,
+      warningName,
+    };
 
     this.#log('WARNING', JSON.stringify(warningLog, null, 2));
   }
