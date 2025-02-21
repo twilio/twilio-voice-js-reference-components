@@ -42,6 +42,7 @@ export const tokenHandler = (req, res) => {
 export const twimlHandler = (req, res, componentUrl, options = {}) => {
   const {
     callerLabel = 'caller',
+    calleeStatusCallbackEvent = [],
     calleeLabel = 'callee',
     maxParticipants = 2,
     endConferenceOnExit = true,
@@ -58,6 +59,7 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
   // The caller creates the conference
   dial.conference(
     {
+      beep: 'false',
       // Label to identify this participant
       participantLabel: `${
         isPhoneNumber(req.body.From) ? 'number' : 'client'
@@ -67,17 +69,26 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
       endConferenceOnExit,
       statusCallback: `${callbackBaseUrl}/${componentUrl}/conference-events`,
       statusCallbackEvent,
+      waitUrl: '',
     },
     roomName
   );
 
   // Add the callee to the conference
   client.conferences(roomName).participants.create({
+    beep: 'false',
     // Label to identify this participant
     label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-${calleeLabel}`,
     from: callerId,
     to: recipient,
     endConferenceOnExit: true,
+    // Callee's progress/status
+    // https://www.twilio.com/docs/voice/api/conference-participant-resource#request-body-parameters
+    statusCallback:
+      calleeStatusCallbackEvent.length > 0
+        ? `${callbackBaseUrl}/${componentUrl}/call-events`
+        : '',
+    statusCallbackEvent: calleeStatusCallbackEvent,
   });
 
   res.header('Content-Type', 'text/xml').status(200).send(twiml.toString());
@@ -134,6 +145,7 @@ export const conferenceEventsHandler = async (req, res, componentUrl, options = 
               content: JSON.stringify({
                 conferenceSid: ConferenceSid,
                 callSid: CallSid,
+                category: 'conference-status',
                 label: ParticipantLabel,
                 muted: Muted,
                 hold: Hold,
@@ -152,6 +164,7 @@ export const conferenceEventsHandler = async (req, res, componentUrl, options = 
                   content: JSON.stringify({
                     conferenceSid: ConferenceSid,
                     callSid: otherParticipant.callSid,
+                    category: 'conference-status',
                     label: otherParticipant.label,
                     muted: otherParticipant.muted,
                     hold: otherParticipant.hold,
