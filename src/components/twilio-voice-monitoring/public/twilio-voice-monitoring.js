@@ -23,8 +23,9 @@ class TwilioVoiceMonitoring extends HTMLElement {
   #handleCallMessageReceived(message) {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
-      const { category, label, statusCallbackEvent } = content;
+      const { callSid, category, label, statusCallbackEvent } = content;
       const statusLog = {
+        callSid,
         event: category,
         label,
         statusCallbackEvent,
