@@ -29,8 +29,10 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
     res,
     componentUrl,
     {
-      statusCallbackEvent: 'start, end, join, leave, mute, hold, modify, speaker, announcement',
+      callerLabel: 'agent',
+      calleeLabel: 'customer',
       calleeStatusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+      statusCallbackEvent: 'start, end, join, leave, mute, hold, modify, speaker, announcement',
     }
   )
 );
@@ -65,7 +67,7 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
     CallStatus,
   } = req.body;
   const caller = await client.calls(callerCallSid).fetch();
-  if (caller.status !== 'completed') {
+  if (caller?.status !== 'completed') {
     // Send callee progress/status to caller
     await client
       .calls(callerCallSid)
@@ -77,7 +79,7 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
           label: Called,
           statusCallbackEvent: CallStatus,
         })
-      })
+    });
   }
 });
 
