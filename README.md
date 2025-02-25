@@ -10,7 +10,7 @@ Twilio Voice JavaScript Reference Components leverages [Web Components](https://
 git clone https://github.com/twilio/twilio-voice-js-reference-components.git
 ```
 
-2. Create a `.env` file and initialize the following environment variables under the `twilio-voice-js-reference-components` folder. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
+2. Create a `.env` file and initialize the following environment variables under the `twilio-voice-js-reference-components` folder. Load the `.env` variables into `process.env` based on your specific platform. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
 
 ```bash
 # Port number to run the server on
