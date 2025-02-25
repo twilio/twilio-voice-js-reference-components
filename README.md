@@ -10,7 +10,13 @@ Twilio Voice JavaScript Reference Components leverages [Web Components](https://
 git clone https://github.com/twilio/twilio-voice-js-reference-components.git
 ```
 
-2. Create a `.env` file and initialize the following environment variables under the `twilio-voice-js-reference-components` folder. Load the `.env` variables into `process.env` based on your specific platform. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
+2. Install the dependencies.
+
+```bash
+npm install
+```
+
+3. Create a `.env` file and initialize the following environment variables under the `twilio-voice-js-reference-components` folder. Load the `.env` variables into `process.env` based on your specific platform. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
 
 ```bash
 # Port number to run the server on
@@ -43,10 +49,16 @@ CALLBACK_BASE_URL=https://foo.ngrok.dev
 DEFAULT_IDENTITY=alice
 ```
 
-3. Install the dependencies.
+- For example, if you're using `bash/zsh` format your `.env` like so:
 
 ```bash
-npm install
+export ACCOUNT_SID=ACxxxxxxxxxxxxxx
+```
+
+- Then, under the `twilio-voice-js-reference-components` folder run:
+
+```bash
+source.env && npm run start
 ```
 
 ## Run the project locally
