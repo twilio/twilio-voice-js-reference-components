@@ -16,7 +16,7 @@ const {
 } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 const componentUrl = 'twilio-voice-monitoring';
-let callerCallSid
+let callerCallSid;
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => tokenHandler(req, res));
@@ -48,7 +48,7 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
     .participants.list();
   // The caller is the first participant to enter the conference
   if (participants.length === 1) {
-    callerCallSid = participants[0].callSid
+    callerCallSid = participants[0].callSid;
   }
 
   conferenceEventsHandler(
@@ -78,7 +78,7 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
           category: 'call-status',
           label: Called,
           statusCallbackEvent: CallStatus,
-        })
+        }),
     });
   }
 });
