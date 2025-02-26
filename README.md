@@ -56,6 +56,7 @@ export ACCOUNT_SID=ACxxxxxxxxxxxxxx
 ```
 
 - Then, under the `twilio-voice-js-reference-components` folder run:
+  - Note: running `source .env` will cause environment variables to persist in your shell session, and will be available to all processes afterwards.
 
 ```bash
 source.env && npm run start
