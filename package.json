@@ -2,7 +2,7 @@
   "name": "twilio-voice-js-reference-components",
   "version": "1.0.0",
   "scripts": {
-    "start": "source .env && node src/server.js"
+    "start": "node src/server.js"
   },
   "type": "module",
   "engines": {
