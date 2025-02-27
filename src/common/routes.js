@@ -8,12 +8,12 @@ const VoiceGrant = AccessToken.VoiceGrant;
 const VoiceResponse = Twilio.twiml.VoiceResponse;
 
 const {
-  appSid,
   accountSid,
-  apiKeySid,
+  appSid,
   apiKeySecret,
-  callerId,
+  apiKeySid,
   callbackBaseUrl,
+  callerId,
   defaultIdentity,
 } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
@@ -28,8 +28,8 @@ export const tokenHandler = (req, res) => {
     ttl: 3600,
   });
   const voiceGrant = new VoiceGrant({
-    outgoingApplicationSid: appSid,
     incomingAllow: Boolean(identity),
+    outgoingApplicationSid: appSid,
   });
 
   token.addGrant(voiceGrant);
@@ -41,10 +41,11 @@ export const tokenHandler = (req, res) => {
  */
 export const twimlHandler = (req, res, componentUrl, options = {}) => {
   const {
-    callerLabel = 'caller',
+    calleeStatusCallbackEvent = [],
     calleeLabel = 'callee',
-    maxParticipants = 2,
+    callerLabel = 'caller',
     endConferenceOnExit = true,
+    maxParticipants = 2,
     statusCallbackEvent = '',
   } = options;
   const twiml = new VoiceResponse();
@@ -58,26 +59,36 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
   // The caller creates the conference
   dial.conference(
     {
+      beep: 'false',
+      endConferenceOnExit,
+      maxParticipants,
       // Label to identify this participant
       participantLabel: `${
         isPhoneNumber(req.body.From) ? 'number' : 'client'
       }-${callerLabel}`,
-      maxParticipants,
       startConferenceOnEnter: true,
-      endConferenceOnExit,
       statusCallback: `${callbackBaseUrl}/${componentUrl}/conference-events`,
       statusCallbackEvent,
+      waitUrl: '',
     },
     roomName
   );
 
   // Add the callee to the conference
   client.conferences(roomName).participants.create({
+    beep: 'false',
+    endConferenceOnExit: true,
+    from: callerId,
     // Label to identify this participant
     label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-${calleeLabel}`,
-    from: callerId,
+    // Callee's progress/status
+    // https://www.twilio.com/docs/voice/api/conference-participant-resource#request-body-parameters
+    statusCallback:
+      calleeStatusCallbackEvent.length > 0
+        ? `${callbackBaseUrl}/${componentUrl}/call-events`
+        : '',
+    statusCallbackEvent: calleeStatusCallbackEvent,
     to: recipient,
-    endConferenceOnExit: true,
   });
 
   res.header('Content-Type', 'text/xml').status(200).send(twiml.toString());
@@ -132,11 +143,12 @@ export const conferenceEventsHandler = async (req, res, componentUrl, options = 
             .userDefinedMessages
             .create({
               content: JSON.stringify({
-                conferenceSid: ConferenceSid,
                 callSid: CallSid,
+                category: 'conference-status',
+                conferenceSid: ConferenceSid,
+                hold: Hold,
                 label: ParticipantLabel,
                 muted: Muted,
-                hold: Hold,
                 remove: true,
                 statusCallbackEvent: StatusCallbackEvent,
               }),
@@ -150,11 +162,12 @@ export const conferenceEventsHandler = async (req, res, componentUrl, options = 
                 .userDefinedMessages
                 .create({
                   content: JSON.stringify({
-                    conferenceSid: ConferenceSid,
                     callSid: otherParticipant.callSid,
+                    category: 'conference-status',
+                    conferenceSid: ConferenceSid,
+                    hold: otherParticipant.hold,
                     label: otherParticipant.label,
                     muted: otherParticipant.muted,
-                    hold: otherParticipant.hold,
                     remove: false,
                     statusCallbackEvent: StatusCallbackEvent,
                   }),
