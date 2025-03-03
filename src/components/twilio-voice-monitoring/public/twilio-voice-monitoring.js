@@ -20,6 +20,14 @@ class TwilioVoiceMonitoring extends HTMLElement {
     });
   }
 
+  #handleCallLogging(event) {
+    const callLog = {
+      callSid: this.#callSid,
+      event,
+    };
+    this.#log('INFO', JSON.stringify(callLog, null, 2));
+  }
+
   #handleCallMessageReceived(message) {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
@@ -107,18 +115,21 @@ class TwilioVoiceMonitoring extends HTMLElement {
   };
 
   #setCallHandlers(call) {
+    // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#events
     this.#call = call;
-    this.#call.on('accept', () => {
+    this.#call.on('accept', (call) => {
+      this.#handleCallLogging('call-accepted');
       this.#callSid = this.#call.parameters.CallSid;
     });
-    this.#call.on('disconnect', this.#reset);
-    this.#call.on('cancel', this.#reset);
-    this.#call.on('reject', this.#reset);
-    this.#call.on('messageReceived', (message) =>
-      this.#handleCallMessageReceived(message)
-    );
+    this.#call.on('cancel', () => {
+      this.#handleCallLogging('call-canceled');
+      this.#reset;
+    });
+    this.#call.on('disconnect', (call) => {
+      this.#handleCallLogging('call-disconnected');
+      this.#reset;
+    });
     this.#call.on('error', (error) => {
-      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#error-event
       const errorLog = {
         callSid: this.#callSid,
         code: error.code,
@@ -126,11 +137,38 @@ class TwilioVoiceMonitoring extends HTMLElement {
       };
       this.#log('ERROR', JSON.stringify(errorLog, null, 2));
     });
+    this.#call.on('messageReceived', (message) =>
+      this.#handleCallMessageReceived(message)
+    );
+    this.#call.on('messageSent', (message) => {
+      this.#handleCallLogging('call-message-sent');
+    });
+    this.#call.on('mute', (isMuted, call) => {
+      this.#handleCallLogging(isMuted ? 'call-muted' : 'call-unmuted');
+    });
+    this.#call.on('reconnected', () => {
+      this.#handleCallLogging('call-reconnected');
+    });
+    this.#call.on('reconnecting', (twilioError) => {
+      this.#handleCallLogging('call-reconnecting');
+    });
+    this.#call.on('reject', () => {
+      this.#handleCallLogging('call-rejected');
+      this.#reset;
+    });
+    this.#call.on('ringing', (hasEarlyMedia) => {
+      this.#handleCallLogging('call-ringing');
+    });
+    this.#call.on('sample', (sample) => {
+      // Handle WebRTC sample data
+    });
+    this.#call.on('volume', (inputVolume, outputVolume) => {
+      // Display volume levels to user
+    });
     this.#call.on('warning', (warningName) => {
       this.#handleWarning(warningName);
     });
     this.#call.on('warning-cleared', (warningName) => {
-      // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-cleared-event
       const warningClearedLog = {
         event: 'warning-cleared',
         callSid: this.#callSid,
