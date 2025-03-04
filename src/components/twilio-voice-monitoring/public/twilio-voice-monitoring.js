@@ -10,6 +10,10 @@ class TwilioVoiceMonitoring extends HTMLElement {
     this.#monitorLog = this.shadowRoot.querySelector('#log');
 
     const twilioVoiceDialer = this.shadowRoot.host.parentElement;
+    twilioVoiceDialer.addEventListener('device', (e) => {
+      const device = e.detail.device;
+      this.#setDeviceHandlers(device);
+    });
     twilioVoiceDialer.addEventListener('incoming', (e) => {
       const call = e.detail.call;
       this.#setCallHandlers(call);
@@ -25,7 +29,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
       callSid: this.#callSid,
       event,
     };
-    this.#log('INFO', JSON.stringify(callLog, null, 2));
+    this.#log('INFO[Call]', JSON.stringify(callLog, null, 2));
   }
 
   #handleCallMessageReceived(message) {
@@ -38,11 +42,11 @@ class TwilioVoiceMonitoring extends HTMLElement {
         label,
         statusCallbackEvent,
       };
-      this.#log('INFO', JSON.stringify(statusLog, null, 2));
+      this.#log('INFO[Call]', JSON.stringify(statusLog, null, 2));
     }
   }
 
-  #handleWarning(warningName) {
+  #handleCallWarning(warningName) {
     // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#warning-event
 
     // Network Quality Warnings
@@ -81,7 +85,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
       warningName,
     };
 
-    this.#log('WARNING', JSON.stringify(warningLog, null, 2));
+    this.#log('WARNING[Call]', JSON.stringify(warningLog, null, 2));
   }
 
   #log(type, msg) {
@@ -114,6 +118,35 @@ class TwilioVoiceMonitoring extends HTMLElement {
     this.#callSid = undefined;
   };
 
+  #setDeviceHandlers(device) {
+    device.on('destroyed', () => {
+      this.#log('INFO[Device]', 'destroyed');
+    });
+    device.on('error', (twilioError, call) => {
+      const errorLog = {
+        callSid: call.parameters.CallSid,
+        code: twilioError.code,
+        message: twilioError.message,
+      };
+      this.#log('Error[Device]', JSON.stringify(errorLog, null, 2));
+    });
+    device.on('incoming', (call) => {
+      this.#log('INFO[Device]', `incoming call from: ${call.parameters.From}`);
+    });
+    device.on('registered', () => {
+      this.#log('INFO[Device]', 'registered');
+    });
+    device.on('registering', () => {
+      this.#log('INFO[Device]', 'registering');
+    });
+    device.on('tokenWillExpire', () => {
+      this.#log('INFO[Device]', 'refreshing token');
+    });
+    device.on('unregistered', () => {
+      this.#log('INFO[Device]', 'unregistered');
+    });
+  }
+
   #setCallHandlers(call) {
     // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#events
     this.#call = call;
@@ -129,13 +162,13 @@ class TwilioVoiceMonitoring extends HTMLElement {
       this.#handleCallLogging('call-disconnected');
       this.#reset;
     });
-    this.#call.on('error', (error) => {
+    this.#call.on('error', (twilioError) => {
       const errorLog = {
         callSid: this.#callSid,
-        code: error.code,
-        message: error.message,
+        code: twilioError.code,
+        message: twilioError.message,
       };
-      this.#log('ERROR', JSON.stringify(errorLog, null, 2));
+      this.#log('ERROR[Call]', JSON.stringify(errorLog, null, 2));
     });
     this.#call.on('messageReceived', (message) =>
       this.#handleCallMessageReceived(message)
@@ -166,7 +199,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
       // Display volume levels to user
     });
     this.#call.on('warning', (warningName) => {
-      this.#handleWarning(warningName);
+      this.#handleCallWarning(warningName);
     });
     this.#call.on('warning-cleared', (warningName) => {
       const warningClearedLog = {
@@ -174,7 +207,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
         callSid: this.#callSid,
         warningName,
       };
-      this.#log('INFO', JSON.stringify(warningClearedLog, null, 2));
+      this.#log('INFO[Call]', JSON.stringify(warningClearedLog, null, 2));
     });
   }
 }
