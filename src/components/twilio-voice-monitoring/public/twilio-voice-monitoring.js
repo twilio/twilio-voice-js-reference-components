@@ -24,14 +24,6 @@ class TwilioVoiceMonitoring extends HTMLElement {
     });
   }
 
-  #handleCallLogging(event) {
-    const callLog = {
-      callSid: this.#callSid,
-      event,
-    };
-    this.#log('INFO[Call]', JSON.stringify(callLog, null, 2));
-  }
-
   #handleCallMessageReceived(message) {
     const { content, messageType } = message;
     if (messageType === 'user-defined-message') {
@@ -96,6 +88,14 @@ class TwilioVoiceMonitoring extends HTMLElement {
     this.#monitorLog.scrollTop = this.#monitorLog.scrollHeight;
   }
 
+  #logCallEvent(event) {
+    const callLog = {
+      callSid: this.#callSid,
+      event,
+    };
+    this.#log('INFO[Call]', JSON.stringify(callLog, null, 2));
+  }
+
   #render() {
     this.shadowRoot.innerHTML = `
       <div id="monitoring">
@@ -128,7 +128,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
         code: twilioError.code,
         message: twilioError.message,
       };
-      this.#log('Error[Device]', JSON.stringify(errorLog, null, 2));
+      this.#log('ERROR[Device]', JSON.stringify(errorLog, null, 2));
     });
     device.on('incoming', (call) => {
       this.#log('INFO[Device]', `incoming call from: ${call.parameters.From}`);
@@ -140,7 +140,7 @@ class TwilioVoiceMonitoring extends HTMLElement {
       this.#log('INFO[Device]', 'registering');
     });
     device.on('tokenWillExpire', () => {
-      this.#log('INFO[Device]', 'refreshing token');
+      this.#log('INFO[Device]', 'tokenWillExpire');
     });
     device.on('unregistered', () => {
       this.#log('INFO[Device]', 'unregistered');
@@ -151,16 +151,16 @@ class TwilioVoiceMonitoring extends HTMLElement {
     // https://www.twilio.com/docs/voice/sdks/javascript/twiliocall#events
     this.#call = call;
     this.#call.on('accept', (call) => {
-      this.#handleCallLogging('call-accepted');
+      this.#logCallEvent('accepted');
       this.#callSid = this.#call.parameters.CallSid;
     });
     this.#call.on('cancel', () => {
-      this.#handleCallLogging('call-canceled');
-      this.#reset;
+      this.#logCallEvent('canceled');
+      this.#reset();
     });
     this.#call.on('disconnect', (call) => {
-      this.#handleCallLogging('call-disconnected');
-      this.#reset;
+      this.#logCallEvent('disconnected');
+      this.#reset();
     });
     this.#call.on('error', (twilioError) => {
       const errorLog = {
@@ -174,23 +174,23 @@ class TwilioVoiceMonitoring extends HTMLElement {
       this.#handleCallMessageReceived(message)
     );
     this.#call.on('messageSent', (message) => {
-      this.#handleCallLogging('call-message-sent');
+      this.#logCallEvent('message-sent');
     });
     this.#call.on('mute', (isMuted, call) => {
-      this.#handleCallLogging(isMuted ? 'call-muted' : 'call-unmuted');
+      this.#logCallEvent(isMuted ? 'muted' : 'unmuted');
     });
     this.#call.on('reconnected', () => {
-      this.#handleCallLogging('call-reconnected');
+      this.#logCallEvent('reconnected');
     });
     this.#call.on('reconnecting', (twilioError) => {
-      this.#handleCallLogging('call-reconnecting');
+      this.#logCallEvent('reconnecting');
     });
     this.#call.on('reject', () => {
-      this.#handleCallLogging('call-rejected');
-      this.#reset;
+      this.#logCallEvent('rejected');
+      this.#reset();
     });
     this.#call.on('ringing', (hasEarlyMedia) => {
-      this.#handleCallLogging('call-ringing');
+      this.#logCallEvent('ringing');
     });
     this.#call.on('sample', (sample) => {
       // Handle WebRTC sample data
