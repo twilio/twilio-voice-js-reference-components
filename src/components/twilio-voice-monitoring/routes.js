@@ -16,7 +16,6 @@ const {
 } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 const componentUrl = 'twilio-voice-monitoring';
-let callerCallSid;
 let callerCallSidResolve;
 let callerCallSidPromise = new Promise((resolve) => {
   callerCallSidResolve = resolve;
@@ -43,18 +42,18 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) => {
+router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) => {
   const getCallerCallSid = async () => {
     const {
       ConferenceSid,
     } = req.body;
     const participants = await client
-    .conferences(ConferenceSid)
-    .participants.list();
+      .conferences(ConferenceSid)
+      .participants
+      .list();
     // The caller is the first participant to enter the conference
     if (participants.length === 1) {
-      callerCallSid = participants[0].callSid;
-      callerCallSidResolve(callerCallSid);
+      callerCallSidResolve(participants[0].callSid);
     };
   };
   getCallerCallSid();
@@ -74,7 +73,7 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
     CallSid,
     CallStatus,
   } = req.body;
-  callerCallSid = await callerCallSidPromise;
+  const callerCallSid = await callerCallSidPromise;
   const caller = await client.calls(callerCallSid).fetch();
   if (caller?.status !== 'completed') {
     // Send callee progress/status to caller
