@@ -44,7 +44,7 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
 router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) => {
-  callerCallSidResolve = async () => {
+  const getCallerCallSid = async () => {
     const {
       ConferenceSid,
     } = req.body;
@@ -54,9 +54,10 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
     // The caller is the first participant to enter the conference
     if (participants.length === 1) {
       callerCallSid = participants[0].callSid;
+      callerCallSidResolve(callerCallSid);
     };
   };
-  callerCallSidResolve();
+  getCallerCallSid();
 
   conferenceEventsHandler(
     req,
@@ -73,9 +74,7 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
     CallSid,
     CallStatus,
   } = req.body;
-  if (callerCallSidPromise) {
-    await callerCallSidResolve;
-  }
+  callerCallSid = await callerCallSidPromise;
   const caller = await client.calls(callerCallSid).fetch();
   if (caller?.status !== 'completed') {
     // Send callee progress/status to caller
