@@ -16,7 +16,10 @@ const {
 } = config;
 const client = Twilio(apiKeySid, apiKeySecret, { accountSid });
 const componentUrl = 'twilio-voice-monitoring';
-let callerCallSid;
+let callerCallSidResolve;
+let callerCallSidPromise = new Promise((resolve) => {
+  callerCallSidResolve = resolve;
+});
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => tokenHandler(req, res));
@@ -39,17 +42,21 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) => {
-  const {
-    ConferenceSid,
-  } = req.body;
-  const participants = await client
-    .conferences(ConferenceSid)
-    .participants.list();
-  // The caller is the first participant to enter the conference
-  if (participants.length === 1) {
-    callerCallSid = participants[0].callSid;
-  }
+router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) => {
+  const getCallerCallSid = async () => {
+    const {
+      ConferenceSid,
+    } = req.body;
+    const participants = await client
+      .conferences(ConferenceSid)
+      .participants
+      .list();
+    // The caller is the first participant to enter the conference
+    if (participants.length === 1) {
+      callerCallSidResolve(participants[0].callSid);
+    };
+  };
+  getCallerCallSid();
 
   conferenceEventsHandler(
     req,
@@ -66,6 +73,7 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
     CallSid,
     CallStatus,
   } = req.body;
+  const callerCallSid = await callerCallSidPromise;
   const caller = await client.calls(callerCallSid).fetch();
   if (caller?.status !== 'completed') {
     // Send callee progress/status to caller
@@ -75,11 +83,11 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
       .create({
         content: JSON.stringify({
           callSid: CallSid,
-          category: 'call-status',
+          category: 'callee-call-status',
           label: Called,
           statusCallbackEvent: CallStatus,
         }),
-    });
+      });
   }
 });
 

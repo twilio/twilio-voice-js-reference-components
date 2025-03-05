@@ -48,6 +48,13 @@ class TwilioVoiceDialer extends HTMLElement {
       .addEventListener('click', () => this.#handleReject());
   }
 
+  #dispatchDeviceEvent(device) {
+    const deviceEvent = new CustomEvent('device', {
+      detail: { device },
+    });
+    this.dispatchEvent(deviceEvent);
+  }
+
   #dispatchIncomingEvent(call) {
     const incomingEvent = new CustomEvent('incoming', {
       detail: { call },
@@ -106,6 +113,7 @@ class TwilioVoiceDialer extends HTMLElement {
 
   async #handleInit() {
     this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
+    this.#dispatchDeviceEvent(this.#device);
     this.#device.on('tokenWillExpire', (device) => {
       this.#dispatchTokenWillExpireEvent(device);
     });
