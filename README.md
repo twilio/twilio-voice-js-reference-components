@@ -2,6 +2,25 @@
 
 Twilio Voice JavaScript Reference Components leverages [Web Components](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) to showcase integrated backend and frontend implementations for common Twilio Voice use cases. Please visit the official [developer documentation](https://www.twilio.com/docs/voice/sdks/javascript/reference-components) for more details.
 
+## Use cases
+
+The reference components demonstrate several common Twilio Voice use cases. These use cases include:
+
+- Dialer Component
+  - Make outgoing calls
+  - Receive incoming calls
+- Basic Call Control Component (leveraging Conference)
+  - Perform cold and warm transfers
+  - Add or remove participants from a call
+  - Hold and Resume a call
+  - Mute and Unmute a call
+- Monitoring calls (leveraging Conference)
+  - Callee call progress
+  - Conference call status
+  - Quality metrics
+  - Warnings
+  - Errors
+
 ## Installation
 
 1. Clone the [Twilio Voice JavaScript Reference Components](https://github.com/twilio/twilio-voice-js-reference-components) GitHub repository.
