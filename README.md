@@ -52,6 +52,7 @@ API_KEY_SECRET=xxxxxxxxxxxxxx
 
 # Twilio TwiML App sid where the Voice Request URL is set to
 # https://yourdomain/twilio-voice-dialer/twiml
+# See more info about TwiML set up by visiting https://www.twilio.com/docs/voice/sdks/javascript#twiml-applications
 APP_SID=APxxxxxxxxxxxxxx
 
 # Twilio auth token
@@ -68,19 +69,6 @@ CALLBACK_BASE_URL=https://foo.ngrok.dev
 DEFAULT_IDENTITY=alice
 ```
 
-- For example, if you're using `bash/zsh` format your `.env` like so:
-
-```bash
-export ACCOUNT_SID=ACxxxxxxxxxxxxxx
-```
-
-- Then, under the `twilio-voice-js-reference-components` folder run:
-  - Note: running `source .env` will cause environment variables to persist in your shell session, and will be available to all processes afterwards.
-
-```bash
-source.env && npm run start
-```
-
 ## Run the project locally
 
 1. Start the local server under the `twilio-voice-js-reference-components` folder.
@@ -88,6 +76,20 @@ source.env && npm run start
 ```bash
 npm start
 ```
+
+- Note: if you're using `bash/zsh` format your `.env` like so:
+
+```bash
+export ACCOUNT_SID=ACxxxxxxxxxxxxxx
+```
+
+- Then, under the `twilio-voice-js-reference-components` folder run:
+
+```bash
+source .env && npm start
+```
+
+- Note: running `source .env` will cause environment variables to persist in your shell session, and will be available to all processes afterwards.
 
 2. Access the following components under the following URLs.
 
