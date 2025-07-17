@@ -35,7 +35,7 @@ git clone https://github.com/twilio/twilio-voice-js-reference-components.git
 npm install
 ```
 
-3. Create a `.env` file and initialize the following environment variables under the `twilio-voice-js-reference-components` folder. Load the `.env` variables into `process.env` based on your specific platform. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
+3. Create a `.env` file and populate the following environment variables under the `twilio-voice-js-reference-components` folder. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
 
 ```bash
 # Port number to run the server on
@@ -76,20 +76,6 @@ DEFAULT_IDENTITY=alice
 ```bash
 npm start
 ```
-
-- Note: if you're using `bash/zsh` format your `.env` like so:
-
-```bash
-export ACCOUNT_SID=ACxxxxxxxxxxxxxx
-```
-
-- Then, under the `twilio-voice-js-reference-components` folder run:
-
-```bash
-source .env && npm start
-```
-
-- Note: running `source .env` will cause environment variables to persist in your shell session, and will be available to all processes afterwards.
 
 2. Access the following components under the following URLs.
 

@@ -1,3 +1,4 @@
+import 'dotenv/config'
 
 const port = parseInt(process.env.PORT, 10) || 3030;
 const appSid = process.env.APP_SID;
