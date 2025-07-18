@@ -67,7 +67,7 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
         isPhoneNumber(req.body.From) ? 'number' : 'client'
       }-${callerLabel}`,
       startConferenceOnEnter: true,
-      statusCallback: `${callbackBaseUrl}/${componentUrl}/conference-events`,
+      statusCallback: `https://${callbackBaseUrl}/${componentUrl}/conference-events`,
       statusCallbackEvent,
       waitUrl: '',
     },
@@ -85,7 +85,7 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
     // https://www.twilio.com/docs/voice/api/conference-participant-resource#request-body-parameters
     statusCallback:
       calleeStatusCallbackEvent.length > 0
-        ? `${callbackBaseUrl}/${componentUrl}/call-events`
+        ? `https://${callbackBaseUrl}/${componentUrl}/call-events`
         : '',
     statusCallbackEvent: calleeStatusCallbackEvent,
     to: recipient,

@@ -9,8 +9,10 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@twilio/voice-sdk": "2.12.1",
+    "@twilio/voice-sdk": "2.15.0",
     "express": "4.21.0",
-    "twilio": "5.2.2"
+    "openai": "5.10.1",
+    "twilio": "5.7.3",
+    "ws": "8.18.3"
   }
 }
