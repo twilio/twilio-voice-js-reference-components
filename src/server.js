@@ -40,9 +40,9 @@ app.use((req, res, next) => {
 // LLM
 const openai = new OpenAI({ apiKey: openaiApiKey });
 async function aiResponse(messages) {
-  let completion = await openai.chat.completions.create({
+  const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages: messages,
+    messages,
   });
   return completion.choices[0].message.content;
 }
