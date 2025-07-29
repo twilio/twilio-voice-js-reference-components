@@ -6,9 +6,9 @@
   const response = await fetch(tokenUrl);
   const data = await response.json();
 
-  const TwilioVoiceAIAssistant = document.querySelector('twilio-voice-ai-assistant');
-  TwilioVoiceAIAssistant.setToken(data.token);
-  TwilioVoiceAIAssistant.addEventListener('tokenWillExpire', async (e) => {
+  const twilioVoiceAIAssistant = document.querySelector('twilio-voice-ai-assistant');
+  twilioVoiceAIAssistant.setToken(data.token);
+  twilioVoiceAIAssistant.addEventListener('tokenWillExpire', async (e) => {
     const device = e.detail.device;
 
     const updateTokenResponse = await fetch(tokenUrl);
