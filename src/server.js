@@ -1,9 +1,10 @@
 import bodyParser from 'body-parser';
+import config from './config.js';
 import express from 'express';
-import { readdirSync } from 'fs'
+import fs from 'fs';
 import http from 'http';
 import path from 'path';
-import config from './config.js';
+import { readdirSync } from 'fs'
 
 const app = express();
 const server = http.createServer(app);
@@ -17,8 +18,9 @@ readdirSync(componentsDir, { withFileTypes: true })
     app.use(`/${name}`, express.static(path.join(componentsDir, name, 'public')));
     app.use(`/${name}`, (await import(path.join(componentsDir, name, 'routes.js'))).default);
 
-    if (name === 'twilio-voice-ai-assistant') {
-      const indexModule = await import(path.join(componentsDir, name, 'index.js'));
+    const indexPath = path.join(componentsDir, name, 'index.js');
+    if (fs.existsSync(indexPath)) {
+      const indexModule = await import(indexPath);
       indexModule.default(server);
     }
   });
