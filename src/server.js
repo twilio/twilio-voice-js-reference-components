@@ -1,10 +1,9 @@
 import bodyParser from 'body-parser';
 import config from './config.js';
 import express from 'express';
-import fs from 'fs';
 import http from 'http';
 import path from 'path';
-import { readdirSync } from 'fs'
+import { existsSync, readdirSync } from 'fs'
 
 const app = express();
 const server = http.createServer(app);
@@ -19,7 +18,7 @@ readdirSync(componentsDir, { withFileTypes: true })
     app.use(`/${name}`, (await import(path.join(componentsDir, name, 'routes.js'))).default);
 
     const indexPath = path.join(componentsDir, name, 'index.js');
-    if (fs.existsSync(indexPath)) {
+    if (existsSync(indexPath)) {
       const indexModule = await import(indexPath);
       indexModule.default(server);
     }
