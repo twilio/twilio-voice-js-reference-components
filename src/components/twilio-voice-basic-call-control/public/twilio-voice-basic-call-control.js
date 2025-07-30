@@ -49,7 +49,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   async #handleAddConference() {
     const response = await this.#addConference();
     if (response.status !== 200) {
-      console.error('Unable to add participant to call: ', respone.error);
+      console.error('Unable to add participant to call: ', response.error);
     }
   }
 

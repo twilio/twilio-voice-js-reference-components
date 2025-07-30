@@ -6,20 +6,24 @@ Twilio Voice JavaScript Reference Components leverages [Web Components](https://
 
 The reference components demonstrate several common Twilio Voice use cases. These use cases include:
 
-- Dialer Component
+- Dialer
   - Make outgoing calls
   - Receive incoming calls
-- Basic Call Control Component (leveraging Conference)
+- Basic Call Control (leveraging Conference)
   - Perform cold and warm transfers
   - Add or remove participants from a call
   - Hold and Resume a call
   - Mute and Unmute a call
-- Monitoring calls (leveraging Conference)
+- Monitoring (leveraging Conference)
   - Callee call progress
   - Conference call status
   - Quality metrics
   - Warnings
   - Errors
+- Voice AI Assistant
+  - Make outgoing call to connect with an agent
+  - Websocket server
+  - Basic OpenAI integration
 
 ## Installation
 
@@ -35,38 +39,19 @@ git clone https://github.com/twilio/twilio-voice-js-reference-components.git
 npm install
 ```
 
-3. Create a `.env` file and initialize the following environment variables under the `twilio-voice-js-reference-components` folder. Load the `.env` variables into `process.env` based on your specific platform. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
+3. Create a `.env` file from the `example.env` file. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
 
 ```bash
-# Port number to run the server on
-PORT=3030
+cp example.env .env
+```
 
-# Twilio account sid
-ACCOUNT_SID=ACxxxxxxxxxxxxxx
+4. In the Twilio Console, navigate to your `TwiML App` settings and set the `Voice Request URL` to the URL endpoint of your desired component. Options:
 
-# Twilio API key
-API_KEY_SID=SKxxxxxxxxxxxxxx
-
-# Twilio API secret
-API_KEY_SECRET=xxxxxxxxxxxxxx
-
-# Twilio TwiML App sid where the Voice Request URL is set to
-# https://yourdomain/twilio-voice-dialer/twiml
-# See more info about TwiML set up by visiting https://www.twilio.com/docs/voice/sdks/javascript#twiml-applications
-APP_SID=APxxxxxxxxxxxxxx
-
-# Twilio auth token
-AUTH_TOKEN=xxxxxxxxxxxxxx
-
-# Caller ID
-CALLER_ID=+11234567890
-
-# If developing locally and running the Reference Components locally, consider using a tool like ngrok to proxy the server endpoints. Once proxied, change CALLBACK_BASE_URL to the ngrok URL endpoints.
-# See more info about ngrok by visiting https://ngrok.com.
-CALLBACK_BASE_URL=https://foo.ngrok.dev
-
-# Default identity to use
-DEFAULT_IDENTITY=alice
+```bash
+https://yourdomain/twilio-voice-dialer/twiml
+https://yourdomain/twilio-voice-basic-call-control/twiml
+https://yourdomain/twilio-voice-monitoring/twiml
+https://yourdomain/twilio-voice-ai-assistant/twiml
 ```
 
 ## Run the project locally
@@ -93,6 +78,7 @@ source .env && npm start
 
 2. Access the following components under the following URLs.
 
-- Dialer related components, access [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
-- Call control related components, access [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
-- Monitoring related components, access [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
+- Dialer, access [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
+- Basic Call Control, access [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
+- Monitoring, access [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
+- Voice AI Assistant, access [http://localhost:3030/twilio-voice-ai-assistant?identity=bob](http://localhost:3030/twilio-voice-ai-assistant?identity=bob).

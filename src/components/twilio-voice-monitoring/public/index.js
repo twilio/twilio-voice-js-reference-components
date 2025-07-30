@@ -1,4 +1,4 @@
-(async function () {
+(async function() {
   const urlParams = new URLSearchParams(window.location.search);
   const identity = urlParams.get('identity');
   const tokenUrl = `/twilio-voice-monitoring/token?identity=${identity}`;
