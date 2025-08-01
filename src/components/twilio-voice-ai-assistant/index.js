@@ -1,4 +1,4 @@
-import { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import OpenAI from 'openai';
 import config from '../../config.js';
 
@@ -13,7 +13,7 @@ const init = (server) => {
   const openai = new OpenAI({ apiKey: openaiApiKey });
   async function aiResponse(messages) {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: 'gpt-4o-mini',
       messages,
     });
     return completion.choices[0].message.content;
@@ -21,45 +21,53 @@ const init = (server) => {
 
   // Handle WebSocket connections
   wss.on('connection', (ws) => {
-    console.log('WebSocket connection established');
+    function broadcastLog(content) {
+      const message = JSON.stringify({ type: 'log', content });
+      wss.clients.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          client.send(message);
+        }
+      });
+    }
+    broadcastLog('WebSocket connection established');
 
     ws.on('message', async (data) => {
       const message = JSON.parse(data);
       switch (message.type) {
         case 'setup':
           const callSid = message.callSid;
-          console.log("Setup for call:", callSid);
+          broadcastLog(`Setup for call: ${callSid}`);
           ws.callSid = callSid;
-          sessions.set(callSid, [{ role: "system", content: SYSTEM_PROMPT }]);
+          sessions.set(callSid, [{ role: 'system', content: SYSTEM_PROMPT }]);
           break;
         case 'prompt':
-          console.log("Processing prompt:", message.voicePrompt);
+          broadcastLog(`Processing prompt: ${message.voicePrompt}`);
           const conversation = sessions.get(ws.callSid);
-          conversation.push({ role: "user", content: message.voicePrompt });
+          conversation.push({ role: 'user', content: message.voicePrompt });
 
           const response = await aiResponse(conversation);
-          conversation.push({ role: "assistant", content: response });
+          conversation.push({ role: 'assistant', content: response });
 
           ws.send(
             JSON.stringify({
-              type: "text",
+              type: 'text',
               token: response,
               last: true,
             })
           );
-          console.log("Sent response:", response);
+          broadcastLog(`Sent response: ${response}`);
           break;
-        case "interrupt":
-          console.log("Handling interruption.");
+        case 'interrupt':
+          broadcastLog('Handling interruption.');
           break;
         default:
-          console.warn("Unknown message type received:", message.type);
+          broadcastLog(`Unknown message type received: ${message.type}`);
           break;
       }
     });
 
     ws.on('close', () => {
-      console.log('WebSocket connection closed');
+      broadcastLog('WebSocket connection closed');
     });
   });
 };

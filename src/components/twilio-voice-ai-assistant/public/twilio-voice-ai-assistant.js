@@ -1,5 +1,6 @@
 class TwilioVoiceAIAssistant extends HTMLElement {
   #call;
+  #conversationRelayLog;
   #device;
   #status = 'idle';
   #token;
@@ -8,6 +9,15 @@ class TwilioVoiceAIAssistant extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this.#render();
+    this.#conversationRelayLog = this.shadowRoot.querySelector('#log');
+
+    const ws = new WebSocket("ws://localhost:3030");
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'log') {
+        this.#log(message.content);
+      }
+    };
 
     this.shadowRoot
       .querySelector('#call')
@@ -34,13 +44,32 @@ class TwilioVoiceAIAssistant extends HTMLElement {
     this.#setStatus('idle');
   }
 
+  #log(msg) {
+    const p = document.createElement('p');
+    p.innerHTML = msg;
+    this.#conversationRelayLog.appendChild(p);
+
+    this.#conversationRelayLog.scrollTop = this.#conversationRelayLog.scrollHeight;
+  }
+
   #render() {
     this.shadowRoot.innerHTML = `
       <div class="container">
         <p id="status">Status: pending</p>
-        <div>
+        <div
+          style="margin-bottom: 20px;">
           <button id="call" style="display: none;">Connect to an Agent</button>
           <button id="hangup" style="display: none;">Hangup</button>
+        </div>
+        <p>Conversation Relay Log:</p>
+        <div
+          id="log"
+          style="
+            width: 600px;
+            background: #D3D3D3;
+            padding: 10px;
+            height: 400px;
+            overflow: auto;">
         </div>
       </div>
     `;
