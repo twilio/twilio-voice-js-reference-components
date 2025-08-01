@@ -44,7 +44,6 @@ const init = (server) => {
         }
       });
     }
-    broadcastLog('WebSocket connection established');
 
     function handleMessage() {
       ws.on('message', async (data) => {
@@ -85,16 +84,22 @@ const init = (server) => {
 
     function handleClose() {
       ws.on('close', () => {
-        broadcastLog('WebSocket connection closed');
+        broadcastLog('CRelay WebSocket connection closed');
+        console.log('CRelay WebSocket connection closed');
       });
     }
 
     if (isCRelayConnection) {
+      broadcastLog('CRelay WebSocket connection established');
+      console.log('CRelay WebSocket connection established');
       handleMessage();
       handleClose();
     } else {
+      console.log('Browser WebSocket connection established');
       // This is the browser client. This is where you add your own authentication.
-      handleClose();
+      ws.on('close', () => {
+        console.log('Browser WebSocket connection closed');
+      });
     }
   });
 };
