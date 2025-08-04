@@ -9,11 +9,12 @@ const authToken = process.env.AUTH_TOKEN;
 const callerId = process.env.CALLER_ID;
 const callbackBaseUrl = process.env.CALLBACK_BASE_URL;
 const defaultIdentity = process.env.DEFAULT_IDENTITY;
+const openaiApiKey = process.env.OPENAI_API_KEY;
 
-if (!appSid || !accountSid || !apiKeySid || !apiKeySecret || !authToken || !callerId || !callbackBaseUrl || !defaultIdentity) {
+if (!appSid || !accountSid || !apiKeySid || !apiKeySecret || !authToken || !callerId || !callbackBaseUrl || !defaultIdentity || !openaiApiKey) {
   throw new Error('Missing environment variables.');
 }
 
-const config = { port, appSid, accountSid, apiKeySid, apiKeySecret, authToken, callerId, callbackBaseUrl, defaultIdentity };
+const config = { port, appSid, accountSid, apiKeySid, apiKeySecret, authToken, callerId, callbackBaseUrl, defaultIdentity, openaiApiKey };
 
 export default config;

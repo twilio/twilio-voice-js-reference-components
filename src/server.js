@@ -1,9 +1,9 @@
 import bodyParser from 'body-parser';
+import config from './config.js';
 import express from 'express';
-import { readdirSync } from 'fs'
 import http from 'http';
 import path from 'path';
-import config from './config.js';
+import { existsSync, readdirSync } from 'fs'
 
 const app = express();
 const server = http.createServer(app);
@@ -16,9 +16,15 @@ readdirSync(componentsDir, { withFileTypes: true })
   .forEach(async ({ name }) => {
     app.use(`/${name}`, express.static(path.join(componentsDir, name, 'public')));
     app.use(`/${name}`, (await import(path.join(componentsDir, name, 'routes.js'))).default);
+
+    const indexPath = path.join(componentsDir, name, 'index.js');
+    if (existsSync(indexPath)) {
+      const indexModule = await import(indexPath);
+      indexModule.default(server);
+    }
   });
 
-  // Serve the SDK
+// Serve the SDK
 app.use('/', express.static(path.join(process.cwd(), 'node_modules/@twilio/voice-sdk/dist')));
 
 app.use(bodyParser.text());
