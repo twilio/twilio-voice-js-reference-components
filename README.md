@@ -62,20 +62,6 @@ https://yourdomain/twilio-voice-ai-assistant/twiml
 npm start
 ```
 
-- Note: if you're using `bash/zsh` format your `.env` like so:
-
-```bash
-export ACCOUNT_SID=ACxxxxxxxxxxxxxx
-```
-
-- Then, under the `twilio-voice-js-reference-components` folder run:
-
-```bash
-source .env && npm start
-```
-
-- Note: running `source .env` will cause environment variables to persist in your shell session, and will be available to all processes afterwards.
-
 2. Access the following components under the following URLs.
 
 - Dialer, access [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
