@@ -36,8 +36,12 @@ const init = (server) => {
     // https://www.twilio.com/docs/voice/conversationrelay/onboarding#websocket-security-with-signature-validation
     const isCRelayConnection = checkCRelayConnection(headers);
 
-    function broadcastLog(content) {
+    // This broadcast method is only called from the message handler
+    // of the CRelay WebSocket connection.
+    function broadcastToBrowserClients(content) {
       const message = JSON.stringify({ type: 'log', content });
+      // Iterate through all WebSocket connections and ignore the CRelay connection
+      // since we're not sending logs to it.
       wss.clients.forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(message);
@@ -51,12 +55,12 @@ const init = (server) => {
         switch (message.type) {
           case 'setup':
             const callSid = message.callSid;
-            broadcastLog(`Setup for call: ${callSid}`);
+            broadcastToBrowserClients(`Setup for call: ${callSid}`);
             ws.callSid = callSid;
             sessions.set(callSid, [{ role: 'system', content: SYSTEM_PROMPT }]);
             break;
           case 'prompt':
-            broadcastLog(`Processing prompt: ${message.voicePrompt}`);
+            broadcastToBrowserClients(`Processing prompt: ${message.voicePrompt}`);
             const conversation = sessions.get(ws.callSid);
             conversation.push({ role: 'user', content: message.voicePrompt });
 
@@ -70,13 +74,13 @@ const init = (server) => {
                 last: true,
               })
             );
-            broadcastLog(`Sent response: ${response}`);
+            broadcastToBrowserClients(`Sent response: ${response}`);
             break;
           case 'interrupt':
-            broadcastLog('Handling interruption.');
+            broadcastToBrowserClients('Handling interruption.');
             break;
           default:
-            broadcastLog(`Unknown message type received: ${message.type}`);
+            broadcastToBrowserClients(`Unknown message type received: ${message.type}`);
             break;
         }
       });
@@ -84,13 +88,13 @@ const init = (server) => {
 
     function handleClose() {
       ws.on('close', () => {
-        broadcastLog('CRelay WebSocket connection closed');
+        broadcastToBrowserClients('CRelay WebSocket connection closed');
         console.log('CRelay WebSocket connection closed');
       });
     }
 
     if (isCRelayConnection) {
-      broadcastLog('CRelay WebSocket connection established');
+      broadcastToBrowserClients('CRelay WebSocket connection established');
       console.log('CRelay WebSocket connection established');
       handleMessage();
       handleClose();
