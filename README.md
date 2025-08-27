@@ -22,8 +22,8 @@ The reference components demonstrate several common Twilio Voice use cases. Thes
   - View errors
 - Voice AI Assistant
   - Place an outbound call and connect to an agent
-  - Provide a Websocket server
-  - Basic OpenAI integration to interface with Conversation Relay
+  - Provide a Websocket server to interface with Conversation Relay
+  - Basic OpenAI integration
 
 ## Installation
 
