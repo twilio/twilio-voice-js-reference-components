@@ -7,22 +7,22 @@ Twilio Voice JavaScript Reference Components leverages [Web Components](https://
 The reference components demonstrate several common Twilio Voice use cases. These use cases include:
 
 - Dialer
-  - Make outgoing calls
+  - Place outgoing calls
   - Receive incoming calls
-- Basic Call Control (leveraging Conference)
-  - Perform cold and warm transfers
+- Basic Call Control (uses Conference)
+  - Perform cold or warm transfers
   - Add or remove participants from a call
   - Hold and Resume a call
   - Mute and Unmute a call
-- Monitoring (leveraging Conference)
-  - Callee call progress
-  - Conference call status
-  - Quality metrics
-  - Warnings
-  - Errors
+- Monitoring (uses Conference)
+  - Observe call progress
+  - Track conference call status
+  - View quality metrics
+  - Receive warnings
+  - View errors
 - Voice AI Assistant
-  - Make outgoing call to connect with an agent
-  - Websocket server
+  - Place an outbound call and connect to an agent
+  - Provide a Websocket server to interface with Conversation Relay
   - Basic OpenAI integration
 
 ## Installation
@@ -39,15 +39,15 @@ git clone https://github.com/twilio/twilio-voice-js-reference-components.git
 npm install
 ```
 
-3. Create a `.env` file from the `example.env` file. Go through the [quickstarts](https://www.twilio.com/docs/voice/sdks/javascript/get-started) for more information about these variables.
+3. Copy `example.env` to `.env`, then supply the required values. For details about each variable, see the [quickstart](https://www.twilio.com/docs/voice/sdks/javascript/get-started).
 
 ```bash
 cp example.env .env
 ```
 
-4. In the Twilio Console, navigate to your `TwiML App` settings and set the `Voice Request URL` to the URL endpoint of your desired component. Options:
+4. In the Twilio Console, open your **TwiML App** settings and set **Voice Request URL** to the endpoint for the component you want to test:
 
-```bash
+```text
 https://yourdomain/twilio-voice-dialer/twiml
 https://yourdomain/twilio-voice-basic-call-control/twiml
 https://yourdomain/twilio-voice-monitoring/twiml
@@ -62,9 +62,9 @@ https://yourdomain/twilio-voice-ai-assistant/twiml
 npm start
 ```
 
-2. Access the following components under the following URLs.
+2. Open a browser and navigate to a component URL.
 
-- Dialer, access [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
-- Basic Call Control, access [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
-- Monitoring, access [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
-- Voice AI Assistant, access [http://localhost:3030/twilio-voice-ai-assistant?identity=bob](http://localhost:3030/twilio-voice-ai-assistant?identity=bob).
+- Dialer: [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
+- Basic Call Control: [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
+- Monitoring: [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
+- Voice AI Assistant: [http://localhost:3030/twilio-voice-ai-assistant?identity=bob](http://localhost:3030/twilio-voice-ai-assistant?identity=bob).
