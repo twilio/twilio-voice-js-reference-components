@@ -9,24 +9,7 @@ const SYSTEM_PROMPT = 'You are a helpful assistant. This conversation is being t
 
 const init = (server) => {
   const wss = new WebSocketServer({ server });
-
-  // LLM
   const openai = new OpenAI({ apiKey: openaiApiKey });
-  async function aiResponse(messages) {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages,
-    });
-    return completion.choices[0].message.content;
-  }
-
-  const checkCRelayConnection = (headers) => 
-    Twilio.validateRequest(
-      authToken,
-      headers['x-twilio-signature'],
-      `wss://${callbackBaseUrl}/websocket`,
-      {}
-    );
 
   // Handle WebSocket connections
   wss.on('connection', (ws, req) => {
@@ -64,17 +47,38 @@ const init = (server) => {
             const conversation = sessions.get(ws.callSid);
             conversation.push({ role: 'user', content: message.voicePrompt });
 
-            const response = await aiResponse(conversation);
-            conversation.push({ role: 'assistant', content: response });
+            const tokenStream = await openai.chat.completions.create({
+              model: 'gpt-4o-mini',
+              messages: conversation,
+              stream: true,
+            });
 
+            let collectedTokens = '';
+            // Send each token as it arrives to minimize latency
+            for await (let chunk of tokenStream) {
+              const content = chunk.choices[0].delta.content;
+              if (content) {
+                ws.send(
+                  JSON.stringify({
+                    type: 'text',
+                    token: content,
+                    last: false,
+                  })
+                );
+                collectedTokens += content;
+              }
+            }
+            // Send final message to indicate completion
             ws.send(
               JSON.stringify({
                 type: 'text',
-                token: response,
+                token: '',
                 last: true,
               })
             );
-            broadcastToBrowserClients(`Sent response: ${response}`);
+
+            conversation.push({ role: 'assistant', content: collectedTokens });
+            broadcastToBrowserClients(`Sent response: ${collectedTokens}`);
             break;
           case 'interrupt':
             broadcastToBrowserClients('Handling interruption.');
@@ -106,6 +110,14 @@ const init = (server) => {
       });
     }
   });
+
+  const checkCRelayConnection = (headers) => 
+    Twilio.validateRequest(
+      authToken,
+      headers['x-twilio-signature'],
+      `wss://${callbackBaseUrl}/websocket`,
+      {}
+    );
 };
 
 export default init;
