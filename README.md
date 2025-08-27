@@ -18,12 +18,12 @@ The reference components demonstrate several common Twilio Voice use cases. Thes
   - Observe call progress
   - Track conference call status
   - View quality metrics
-  - Receive Warnings
-  - View Errors
+  - Receive warnings
+  - View errors
 - Voice AI Assistant
   - Place an outbound call and connect to an agent
   - Provide a Websocket server
-  - Basic OpenAI integration
+  - Basic OpenAI integration to interface with Conversation Relay
 
 ## Installation
 
