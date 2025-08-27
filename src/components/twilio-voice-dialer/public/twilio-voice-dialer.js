@@ -88,7 +88,7 @@ class TwilioVoiceDialer extends HTMLElement {
   async #handleCall() {
     const recipient = this.shadowRoot.querySelector('#recipient').value;
     if (recipient) {
-      this.#call = await this.#device.connect({ params: { recipient } });
+      this.#call = await this.#device.connect({ params: { To: recipient } });
       this.#dispatchOutgoingEvent(this.#call);
       this.#setupCallHandlers(this.#call);
       this.#setStatus('inprogress');
