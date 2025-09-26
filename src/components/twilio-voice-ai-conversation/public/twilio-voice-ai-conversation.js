@@ -1,4 +1,4 @@
-class TwilioVoiceAIAssistant extends HTMLElement {
+class TwilioVoiceAIConversation extends HTMLElement {
   #call;
   #conversationRelayLog;
   #device;
@@ -114,6 +114,6 @@ class TwilioVoiceAIAssistant extends HTMLElement {
 }
 
 customElements.define(
-  'twilio-voice-ai-assistant',
-  TwilioVoiceAIAssistant
+  'twilio-voice-ai-conversation',
+  TwilioVoiceAIConversation
 );

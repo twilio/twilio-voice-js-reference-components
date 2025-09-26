@@ -20,7 +20,7 @@ The reference components demonstrate several common Twilio Voice use cases. Thes
   - View quality metrics
   - Receive warnings
   - View errors
-- Voice AI Assistant
+- Voice AI Conversation
   - Place an outbound call and connect to an agent
   - Provide a Websocket server to interface with Conversation Relay
   - Basic OpenAI integration
@@ -51,7 +51,7 @@ cp example.env .env
 https://yourdomain/twilio-voice-dialer/twiml
 https://yourdomain/twilio-voice-basic-call-control/twiml
 https://yourdomain/twilio-voice-monitoring/twiml
-https://yourdomain/twilio-voice-ai-assistant/twiml
+https://yourdomain/twilio-voice-ai-conversation/twiml
 ```
 
 ## Run the project locally
@@ -67,4 +67,4 @@ npm start
 - Dialer: [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
 - Basic Call Control: [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
 - Monitoring: [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
-- Voice AI Assistant: [http://localhost:3030/twilio-voice-ai-assistant?identity=bob](http://localhost:3030/twilio-voice-ai-assistant?identity=bob).
+- Voice AI Conversation: [http://localhost:3030/twilio-voice-ai-conversation?identity=bob](http://localhost:3030/twilio-voice-ai-conversation?identity=bob).
