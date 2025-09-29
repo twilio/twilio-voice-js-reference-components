@@ -76,10 +76,6 @@ class TwilioVoiceDialer extends HTMLElement {
     this.dispatchEvent(tokenWillExpireEvent);
   }
 
-  disconnectedCallback() {
-    this.#device.destroy();
-  }
-
   #handleAccept() {
     this.#call.accept();
     this.#setStatus('inprogress');
