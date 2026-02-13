@@ -40,7 +40,10 @@ class TwilioVoiceAIConversation extends HTMLElement {
   }
 
   async #handleInit() {
-    this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
+    this.#device = new Twilio.Device(this.#token, {
+      codecPreferences: ['opus', 'pcmu'],
+      logLevel: 1,
+    });
     this.#setStatus('idle');
   }
 
