@@ -108,7 +108,10 @@ class TwilioVoiceDialer extends HTMLElement {
   };
 
   async #handleInit() {
-    this.#device = new Twilio.Device(this.#token, { logLevel: 1 });
+    this.#device = new Twilio.Device(this.#token, {
+      codecPreferences: ['opus', 'pcmu'],
+      logLevel: 1,
+    });
     this.#dispatchDeviceEvent(this.#device);
     this.#device.on('tokenWillExpire', (device) => {
       this.#dispatchTokenWillExpireEvent(device);
