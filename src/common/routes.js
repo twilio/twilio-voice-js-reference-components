@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import Twilio from 'twilio';
 import config from '../config.js';
-import { isPhoneNumber } from './utils.js';
+import { isPhoneNumber } from './utils.js'; 
 
 const AccessToken = Twilio.jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
@@ -40,6 +40,10 @@ export const tokenHandler = (req, res) => {
  * Handler for the TwiML App Webhook, set in the User's Twilio Console.
  */
 export const twimlHandler = (req, res, componentUrl, options = {}) => {
+  console.log('=== TwiML Handler Called ===');
+  console.log('All keys in body:', Object.keys(req.body));
+  console.log('emergencyId in body:', req.body.emergencyId);
+
   const {
     calleeStatusCallbackEvent = [],
     calleeLabel = 'callee',
@@ -51,10 +55,56 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial();
 
+  // Extract emergency parameters from request body
+  const emergencyParams = {
+    emergencyCallerPosition: req.body.emergencyCallerPosition || req.query.emergencyCallerPosition,
+    emergencyCallerLocation: req.body.emergencyCallerLocation || req.query.emergencyCallerLocation,
+    emergencyName: req.body.emergencyName || req.query.emergencyName,
+    emergencyAddress: req.body.emergencyAddress || req.query.emergencyAddress,
+    emergencyZipCode: req.body.emergencyZipCode || req.query.emergencyZipCode,
+    emergencyCity: req.body.emergencyCity || req.query.emergencyCity,
+    emergencyState: req.body.emergencyState || req.query.emergencyState,
+    emergencyCountry: req.body.emergencyCountry || req.query.emergencyCountry,
+  };
+
+  // Log emergency parameters for monitoring/alerting
+  if (emergencyParams.emergencyCallerPosition) {
+    console.log('Emergency call initiated:', emergencyParams);
+  }
+
   // Generates 1:1 conference
   const roomName = `conference-${crypto.randomUUID()}`;
-  let recipient = req.body.recipient || defaultIdentity;
+  let recipient = req.query.recipient || req.body.recipient || defaultIdentity;
   recipient = isPhoneNumber(recipient) ? recipient : 'client:' + recipient;
+
+  // Build statusCallback URL with emergency parameters
+  const statusCallbackUrl = new URL(`https://${callbackBaseUrl}/${componentUrl}/conference-events`);
+  console.log("Printing Emergency details:", emergencyParams);
+
+  if (emergencyParams.emergencyCallerPosition) {
+    statusCallbackUrl.searchParams.append('emergencyCallerPosition', emergencyParams.emergencyCallerPosition);
+  }
+  if (emergencyParams.emergencyCallerLocation) {
+    statusCallbackUrl.searchParams.append('emergencyCallerLocation', emergencyParams.emergencyCallerLocation);
+  }
+  if (emergencyParams.emergencyName) {
+    statusCallbackUrl.searchParams.append('emergencyName', emergencyParams.emergencyName);
+  }
+  if (emergencyParams.emergencyAddress) {
+    statusCallbackUrl.searchParams.append('emergencyAddress', emergencyParams.emergencyAddress);
+  }
+  if (emergencyParams.emergencyZipCode) {
+    statusCallbackUrl.searchParams.append('emergencyZipCode', emergencyParams.emergencyZipCode);
+  }
+  if (emergencyParams.emergencyCity) {
+    statusCallbackUrl.searchParams.append('emergencyCity', emergencyParams.emergencyCity);
+  }
+  if (emergencyParams.emergencyState) {
+    statusCallbackUrl.searchParams.append('emergencyState', emergencyParams.emergencyState);
+  }
+  if (emergencyParams.emergencyCountry) {
+    statusCallbackUrl.searchParams.append('emergencyCountry', emergencyParams.emergencyCountry);
+  }
 
   // The caller creates the conference
   dial.conference(
@@ -67,7 +117,7 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
         isPhoneNumber(req.body.From) ? 'number' : 'client'
       }-${callerLabel}`,
       startConferenceOnEnter: true,
-      statusCallback: `https://${callbackBaseUrl}/${componentUrl}/conference-events`,
+      statusCallback: statusCallbackUrl.toString(),
       statusCallbackEvent,
       waitUrl: '',
     },
@@ -109,6 +159,26 @@ export const conferenceEventsHandler = async (req, res, componentUrl, options = 
   const {
     statusCallbackEvents = [],
   } = options;
+
+  // Extract emergency parameters from query string if present
+  const emergencyParams = {
+    emergencyCallerPosition: req.query.emergencyCallerPosition,
+    emergencyCallerLocation: req.query.emergencyCallerLocation,
+    emergencyName: req.query.emergencyName,
+    emergencyAddress: req.query.emergencyAddress,
+    emergencyZipCode: req.query.emergencyZipCode,
+    emergencyCity: req.query.emergencyCity,
+    emergencyState: req.query.emergencyState,
+    emergencyCountry: req.query.emergencyCountry,
+  };
+
+  // Log emergency conference events
+  if (emergencyParams.emergencyCallerPosition) {
+    console.log(`Emergency conference event: ${StatusCallbackEvent}`, {
+      conferenceSid: ConferenceSid,
+      ...emergencyParams,
+    });
+  }
 
   let shouldSendMessage;
   switch (componentUrl) {

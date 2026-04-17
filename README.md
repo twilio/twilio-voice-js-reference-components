@@ -68,3 +68,15 @@ npm start
 - Basic Call Control: [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
 - Monitoring: [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
 - Voice AI Conversation: [http://localhost:3030/twilio-voice-ai-conversation?identity=bob](http://localhost:3030/twilio-voice-ai-conversation?identity=bob).
+
+## Testing Emergency Calls
+
+To test emergency call parameters in conference calls:
+
+1. Navigate to [http://localhost:3030/test-emergency-call.html](http://localhost:3030/test-emergency-call.html)
+2. Click "Initialize Device" to connect to Twilio
+3. Fill in the emergency details (recipient, location, position, address, etc.)
+4. Click "Make Emergency Call"
+5. Check the event log in the browser and your server console for emergency parameter logs
+
+The test page includes pre-filled example values and validates all required emergency fields before making the call.
