@@ -41,8 +41,7 @@ export const tokenHandler = (req, res) => {
  */
 export const twimlHandler = (req, res, componentUrl, options = {}) => {
   console.log('=== TwiML Handler Called ===');
-  console.log('All keys in body:', Object.keys(req.body));
-  console.log('emergencyId in body:', req.body.emergencyId);
+  console.log('All keys in body:', req.body); 
 
   const {
     calleeStatusCallbackEvent = [],
@@ -74,7 +73,7 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
 
   // Generates 1:1 conference
   const roomName = `conference-${crypto.randomUUID()}`;
-  let recipient = req.query.recipient || req.body.recipient || defaultIdentity;
+  let recipient =   req.body.To; 
   recipient = isPhoneNumber(recipient) ? recipient : 'client:' + recipient;
 
   // Build statusCallback URL with emergency parameters
@@ -125,6 +124,17 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
   );
 
   // Add the callee to the conference
+  console.log('=== Conference Participant Debug ===');
+  console.log('Room Name:', roomName);
+  console.log('Recipient (raw):', req.query.recipient || req.body.recipient || defaultIdentity);
+  console.log('Recipient (formatted):', recipient);
+  console.log('Caller ID (from):', callerId);
+  console.log('Is Phone Number:', isPhoneNumber(recipient));
+  console.log('Participant Label:', `${isPhoneNumber(recipient) ? 'number' : 'client'}-${calleeLabel}`);
+  console.log('Status Callback URL:', calleeStatusCallbackEvent.length > 0 ? `https://${callbackBaseUrl}/${componentUrl}/call-events` : 'NONE');
+  console.log('Status Callback Events:', calleeStatusCallbackEvent);
+  console.log('=====================================');
+ 
   client.conferences(roomName).participants.create({
     beep: 'false',
     endConferenceOnExit: true,
@@ -139,6 +149,21 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
         : '',
     statusCallbackEvent: calleeStatusCallbackEvent,
     to: recipient,
+  })
+  .then((participant) => {
+    console.log('✅ Participant created successfully:', {
+      callSid: participant.callSid,
+      label: participant.label,
+      status: participant.status,
+    });
+  })
+  .catch((error) => {
+    console.error('❌ Failed to create participant:', {
+      message: error.message,
+      code: error.code,
+      moreInfo: error.moreInfo,
+      details: error.details,
+    });
   });
 
   res.header('Content-Type', 'text/xml').status(200).send(twiml.toString());

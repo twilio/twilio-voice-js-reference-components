@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emergency Call Test</title>
+  <title>Emergency Call Test - Fixed</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -43,6 +43,11 @@
       border-color: #17a2b8;
       color: #0c5460;
     }
+    .danger {
+      background: #f8d7da;
+      border-color: #dc3545;
+      color: #721c24;
+    }
     input, select {
       width: 100%;
       padding: 12px;
@@ -77,6 +82,10 @@
     button.danger:hover {
       background: #c82333;
     }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
     #status {
       margin-top: 20px;
       padding: 15px;
@@ -89,7 +98,7 @@
       border-radius: 5px;
       padding: 15px;
       margin-top: 20px;
-      max-height: 300px;
+      max-height: 400px;
       overflow-y: auto;
     }
     .log-entry {
@@ -117,50 +126,46 @@
 </head>
 <body>
   <div class="container">
-    <h1>🚨 Emergency Call Test</h1>
-    <p class="subtitle">Test emergency parameters in conference calls</p>
+    <h1>🚨 Emergency Call Test - Fixed</h1>
+    <p class="subtitle">Test emergency parameters passed through device.connect()</p>
 
     <div class="alert info">
       <strong>ℹ️ Instructions:</strong>
       <ol style="margin: 10px 0 0 0; padding-left: 20px;">
         <li>Click "Initialize Device" to connect to Twilio</li>
-        <li>Fill in the emergency details below</li>
+        <li>Fill in the recipient and emergency details below</li>
         <li>Click "Make Emergency Call"</li>
-        <li>Check your server console for emergency logs</li>
+        <li><strong>Check your server console</strong> for emergency logs - you should see the parameters printed</li>
       </ol>
     </div>
 
     <div id="status" class="alert"></div>
 
-    <label>Emergency Number*</label>
-    <input type="text" id="emergencyNumber" placeholder="e.g., 933" value="+1933">
-
-    <label>Agent/Recipient (phone number or client identity)*</label>
+    <label>Recipient (phone number or client identity)*</label>
     <input type="text" id="recipient" placeholder="e.g., +12345678900 or bob" value="bob">
 
-    <label>Emergency Caller Position (Lat Lon)*</label>
-    <input type="text" id="emergencyCallerPosition" placeholder="e.g., 41.10 39.8" value="41.10 39.8">
+    <label>Emergency Type*</label>
+    <select id="emergencyType">
+      <option value="">Select emergency type...</option>
+      <option value="medical">🏥 Medical Emergency</option>
+      <option value="fire">🔥 Fire</option>
+      <option value="police">🚔 Police/Security</option>
+      <option value="accident" selected>🚗 Accident</option>
+      <option value="natural_disaster">🌪️ Natural Disaster</option>
+      <option value="other">⚠️ Other</option>
+    </select>
 
-    <label>Emergency Caller Location*</label>
-    <input type="text" id="emergencyCallerLocation" placeholder="e.g., Floor 3 Cubicle 2" value="Floor 3 Cubicle 2">
+    <label>Emergency Location*</label>
+    <input type="text" id="emergencyLocation" placeholder="e.g., 123 Main St, Building A, Floor 3" value="123 Main Street, Downtown">
 
-    <label>Emergency Name*</label>
-    <input type="text" id="emergencyName" placeholder="e.g., Twilio Inc" value="Twilio Inc">
-
-    <label>Emergency Address*</label>
-    <input type="text" id="emergencyAddress" placeholder="e.g., 101 Spear Drive" value="101 Spear Drive">
-
-    <label>Emergency Zip Code*</label>
-    <input type="text" id="emergencyZipCode" placeholder="e.g., 94105" value="94105">
-
-    <label>Emergency City*</label>
-    <input type="text" id="emergencyCity" placeholder="e.g., San Francisco" value="San Francisco">
-
-    <label>Emergency State*</label>
-    <input type="text" id="emergencyState" placeholder="e.g., CA" value="CA">
-
-    <label>Emergency Country*</label>
-    <input type="text" id="emergencyCountry" placeholder="e.g., USA" value="USA">
+    <label>Priority Level*</label>
+    <select id="emergencyPriority">
+      <option value="">Select priority...</option>
+      <option value="low">Low - Non-urgent</option>
+      <option value="medium">Medium - Timely response needed</option>
+      <option value="high" selected>High - Urgent</option>
+      <option value="critical">Critical - Life threatening</option>
+    </select>
 
     <div style="margin-top: 20px;">
       <button id="initBtn" onclick="initDevice()">Initialize Device</button>
@@ -203,10 +208,12 @@
     async function initDevice() {
       try {
         showStatus('Initializing Twilio Device...', 'info');
-        log('Fetching access token...');
+        log('🔄 Fetching access token...');
 
         const response = await fetch('/twilio-voice-dialer/token');
         const data = await response.json();
+
+        log('✅ Token received');
 
         device = new Twilio.Device(data.token, {
           codecPreferences: ['opus', 'pcmu'],
@@ -221,87 +228,55 @@
         });
 
         device.on('error', (error) => {
-          log('❌ Device error', error);
+          log('❌ Device error: ' + error.message, error);
           showStatus('Error: ' + error.message, 'danger');
         });
 
+        log('📞 Registering device...');
         await device.register();
 
       } catch (error) {
-        log('❌ Failed to initialize device', error);
+        log('❌ Failed to initialize device: ' + error.message, error);
         showStatus('Failed to initialize: ' + error.message, 'danger');
       }
     }
 
     async function makeEmergencyCall() {
-      const emergencyNumber = document.getElementById('emergencyNumber').value;
       const recipient = document.getElementById('recipient').value;
-      const emergencyCallerPosition = document.getElementById('emergencyCallerPosition').value;
-      const emergencyCallerLocation = document.getElementById('emergencyCallerLocation').value;
-      const emergencyName = document.getElementById('emergencyName').value;
-      const emergencyAddress = document.getElementById('emergencyAddress').value;
-      const emergencyZipCode = document.getElementById('emergencyZipCode').value;
-      const emergencyCity = document.getElementById('emergencyCity').value;
-      const emergencyState = document.getElementById('emergencyState').value;
-      const emergencyCountry = document.getElementById('emergencyCountry').value;
+      const emergencyType = document.getElementById('emergencyType').value;
+      const emergencyLocation = document.getElementById('emergencyLocation').value;
+      const emergencyPriority = document.getElementById('emergencyPriority').value;
 
-      if (!emergencyNumber || !recipient) {
-        showStatus('Please enter emergency number and recipient', 'danger');
+      if (!recipient) {
+        showStatus('Please enter a recipient', 'danger');
         return;
       }
 
-      if (!emergencyCallerPosition || !emergencyCallerLocation || !emergencyName || !emergencyAddress || !emergencyZipCode || !emergencyCity || !emergencyState || !emergencyCountry) {
+      if (!emergencyType || !emergencyLocation || !emergencyPriority) {
         showStatus('Please fill in all emergency fields', 'danger');
         return;
       }
 
       try {
+        // Build params object with ALL parameters including recipient
         const params = {
-          emergencyCallerPosition,
-          emergencyCallerLocation,
-          emergencyName,
-          emergencyAddress,
-          emergencyZipCode,
-          emergencyCity,
-          emergencyState,
-          emergencyCountry
+          recipient: recipient,
+          emergencyType: emergencyType,
+          emergencyLocation: emergencyLocation,
+          emergencyPriority: emergencyPriority
         };
 
         log('🚨 Initiating emergency call with parameters:', params);
         showStatus('Connecting emergency call...', 'info');
 
-        const conferenceName = `emergency-${Date.now()}`;
-
-        // Generate TwiML to create conference, dial 933, and dial agent with emergency parameters
-        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-                        <Response>
-                          <Dial>
-                            <Conference beep="false" startConferenceOnEnter="true" endConferenceOnExit="true">${conferenceName}</Conference>
-                          </Dial>
-                        </Response>`;
-
-        log('Generated TwiML:', { twiml, conferenceName });
-
-        call = await device.connect({
-          params: {
-            To: emergencyNumber,
-            Agent: recipient,
-            ConferenceName: conferenceName,
-            emergencyCallerPosition,
-            emergencyCallerLocation,
-            emergencyName,
-            emergencyAddress,
-            emergencyZipCode,
-            emergencyCity,
-            emergencyState,
-            emergencyCountry
-          },
-          twiml: twiml
-        });
+        // Make the call using device.connect with params
+        // These params will be sent to your TwiML webhook as part of the request body
+        call = await device.connect({ params });
 
         call.on('accept', () => {
-          log('📞 Call connected');
-          showStatus('Emergency call in progress', 'success');
+          log('📞 Call connected successfully');
+          const badge = getPriorityBadge(emergencyPriority);
+          showStatus(`Emergency call in progress ${badge}`, 'success');
           document.getElementById('callBtn').disabled = true;
           document.getElementById('hangupBtn').disabled = false;
         });
@@ -315,12 +290,16 @@
         });
 
         call.on('error', (error) => {
-          log('❌ Call error', error);
+          log('❌ Call error: ' + error.message, error);
           showStatus('Call error: ' + error.message, 'danger');
         });
 
+        call.on('ringing', () => {
+          log('📲 Call is ringing...');
+        });
+
       } catch (error) {
-        log('❌ Failed to make call', error);
+        log('❌ Failed to make call: ' + error.message, error);
         showStatus('Failed to connect: ' + error.message, 'danger');
       }
     }
@@ -332,10 +311,19 @@
       }
     }
 
+    function getPriorityBadge(priority) {
+      const badges = {
+        critical: '<span class="emergency-badge priority-critical">CRITICAL</span>',
+        high: '<span class="emergency-badge priority-high">HIGH</span>',
+        medium: '<span class="emergency-badge priority-medium">MEDIUM</span>',
+        low: '<span class="emergency-badge priority-low">LOW</span>'
+      };
+      return badges[priority] || '';
+    }
 
     // Log initial page load
     log('🚀 Emergency call test page loaded');
-    log('✅ Server connection: OK');
+    log('📡 Waiting for device initialization...');
   </script>
 </body>
 </html>
