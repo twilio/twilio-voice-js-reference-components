@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Call Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 30px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .alert {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .success {
+      background: #d4edda;
+      border-color: #28a745;
+      color: #155724;
+    }
+    .info {
+      background: #d1ecf1;
+      border-color: #17a2b8;
+      color: #0c5460;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    label {
+      font-weight: 600;
+      color: #333;
+      display: block;
+      margin-top: 15px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px 0 0;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button.danger {
+      background: #dc3545;
+    }
+    button.danger:hover {
+      background: #c82333;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+    .log-container {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      font-family: monospace;
+      font-size: 12px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+    .emergency-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+    .priority-critical { background: #dc3545; color: white; }
+    .priority-high { background: #ff6b6b; color: white; }
+    .priority-medium { background: #ffc107; color: black; }
+    .priority-low { background: #28a745; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚨 Emergency Call Test</h1>
+    <p class="subtitle">Test emergency parameters in conference calls</p>
+
+    <div class="alert info">
+      <strong>ℹ️ Instructions:</strong>
+      <ol style="margin: 10px 0 0 0; padding-left: 20px;">
+        <li>Click "Initialize Device" to connect to Twilio</li>
+        <li>Fill in the emergency details below</li>
+        <li>Click "Make Emergency Call"</li>
+        <li>Check your server console for emergency logs</li>
+      </ol>
+    </div>
+
+    <div id="status" class="alert"></div>
+
+    <label>Emergency Number*</label>
+    <input type="text" id="emergencyNumber" placeholder="e.g., 933" value="+1933">
+
+    <label>Agent/Recipient (phone number or client identity)*</label>
+    <input type="text" id="recipient" placeholder="e.g., +12345678900 or bob" value="bob">
+
+    <label>Emergency Caller Position (Lat Lon)*</label>
+    <input type="text" id="emergencyCallerPosition" placeholder="e.g., 41.10 39.8" value="41.10 39.8">
+
+    <label>Emergency Caller Location*</label>
+    <input type="text" id="emergencyCallerLocation" placeholder="e.g., Floor 3 Cubicle 2" value="Floor 3 Cubicle 2">
+
+    <label>Emergency Name*</label>
+    <input type="text" id="emergencyName" placeholder="e.g., Twilio Inc" value="Twilio Inc">
+
+    <label>Emergency Address*</label>
+    <input type="text" id="emergencyAddress" placeholder="e.g., 101 Spear Drive" value="101 Spear Drive">
+
+    <label>Emergency Zip Code*</label>
+    <input type="text" id="emergencyZipCode" placeholder="e.g., 94105" value="94105">
+
+    <label>Emergency City*</label>
+    <input type="text" id="emergencyCity" placeholder="e.g., San Francisco" value="San Francisco">
+
+    <label>Emergency State*</label>
+    <input type="text" id="emergencyState" placeholder="e.g., CA" value="CA">
+
+    <label>Emergency Country*</label>
+    <input type="text" id="emergencyCountry" placeholder="e.g., USA" value="USA">
+
+    <div style="margin-top: 20px;">
+      <button id="initBtn" onclick="initDevice()">Initialize Device</button>
+      <button id="callBtn" onclick="makeEmergencyCall()" disabled>Make Emergency Call</button>
+      <button class="danger" id="hangupBtn" onclick="hangup()" disabled>Hang Up</button>
+    </div>
+
+    <div class="log-container">
+      <strong>📋 Event Log:</strong>
+      <div id="logs"></div>
+    </div>
+  </div>
+
+  <script src="/twilio.min.js"></script>
+  <script>
+    let device = null;
+    let call = null;
+
+    function log(message, data = null) {
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry';
+      const timestamp = new Date().toLocaleTimeString();
+      logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+
+      if (data) {
+        logEntry.innerHTML += `<br><pre style="margin: 5px 0 0 20px;">${JSON.stringify(data, null, 2)}</pre>`;
+      }
+
+      document.getElementById('logs').appendChild(logEntry);
+      document.querySelector('.log-container').scrollTop = document.querySelector('.log-container').scrollHeight;
+    }
+
+    function showStatus(message, type = 'info') {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = `alert ${type}`;
+      status.style.display = 'block';
+    }
+
+    async function initDevice() {
+      try {
+        showStatus('Initializing Twilio Device...', 'info');
+        log('Fetching access token...');
+
+        const response = await fetch('/twilio-voice-dialer/token');
+        const data = await response.json();
+
+        device = new Twilio.Device(data.token, {
+          codecPreferences: ['opus', 'pcmu'],
+          logLevel: 1
+        });
+
+        device.on('registered', () => {
+          log('✅ Device registered successfully');
+          showStatus('Device ready! You can now make emergency calls.', 'success');
+          document.getElementById('initBtn').disabled = true;
+          document.getElementById('callBtn').disabled = false;
+        });
+
+        device.on('error', (error) => {
+          log('❌ Device error', error);
+          showStatus('Error: ' + error.message, 'danger');
+        });
+
+        await device.register();
+
+      } catch (error) {
+        log('❌ Failed to initialize device', error);
+        showStatus('Failed to initialize: ' + error.message, 'danger');
+      }
+    }
+
+    async function makeEmergencyCall() {
+      const emergencyNumber = document.getElementById('emergencyNumber').value;
+      const recipient = document.getElementById('recipient').value;
+      const emergencyCallerPosition = document.getElementById('emergencyCallerPosition').value;
+      const emergencyCallerLocation = document.getElementById('emergencyCallerLocation').value;
+      const emergencyName = document.getElementById('emergencyName').value;
+      const emergencyAddress = document.getElementById('emergencyAddress').value;
+      const emergencyZipCode = document.getElementById('emergencyZipCode').value;
+      const emergencyCity = document.getElementById('emergencyCity').value;
+      const emergencyState = document.getElementById('emergencyState').value;
+      const emergencyCountry = document.getElementById('emergencyCountry').value;
+
+      if (!emergencyNumber || !recipient) {
+        showStatus('Please enter emergency number and recipient', 'danger');
+        return;
+      }
+
+      if (!emergencyCallerPosition || !emergencyCallerLocation || !emergencyName || !emergencyAddress || !emergencyZipCode || !emergencyCity || !emergencyState || !emergencyCountry) {
+        showStatus('Please fill in all emergency fields', 'danger');
+        return;
+      }
+
+      try {
+        const params = {
+          emergencyCallerPosition,
+          emergencyCallerLocation,
+          emergencyName,
+          emergencyAddress,
+          emergencyZipCode,
+          emergencyCity,
+          emergencyState,
+          emergencyCountry
+        };
+
+        log('🚨 Initiating emergency call with parameters:', params);
+        showStatus('Connecting emergency call...', 'info');
+
+        const conferenceName = `emergency-${Date.now()}`;
+
+        // Generate TwiML to create conference, dial 933, and dial agent with emergency parameters
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+                        <Response>
+                          <Dial>
+                            <Conference beep="false" startConferenceOnEnter="true" endConferenceOnExit="true">${conferenceName}</Conference>
+                          </Dial>
+                        </Response>`;
+
+        log('Generated TwiML:', { twiml, conferenceName });
+
+        call = await device.connect({
+          params: {
+            To: emergencyNumber,
+            Agent: recipient,
+            ConferenceName: conferenceName,
+            emergencyCallerPosition,
+            emergencyCallerLocation,
+            emergencyName,
+            emergencyAddress,
+            emergencyZipCode,
+            emergencyCity,
+            emergencyState,
+            emergencyCountry
+          },
+          twiml: twiml
+        });
+
+        call.on('accept', () => {
+          log('📞 Call connected');
+          showStatus('Emergency call in progress', 'success');
+          document.getElementById('callBtn').disabled = true;
+          document.getElementById('hangupBtn').disabled = false;
+        });
+
+        call.on('disconnect', () => {
+          log('📴 Call disconnected');
+          showStatus('Call ended', 'info');
+          document.getElementById('callBtn').disabled = false;
+          document.getElementById('hangupBtn').disabled = true;
+          call = null;
+        });
+
+        call.on('error', (error) => {
+          log('❌ Call error', error);
+          showStatus('Call error: ' + error.message, 'danger');
+        });
+
+      } catch (error) {
+        log('❌ Failed to make call', error);
+        showStatus('Failed to connect: ' + error.message, 'danger');
+      }
+    }
+
+    function hangup() {
+      if (call) {
+        call.disconnect();
+        log('👋 Hanging up call');
+      }
+    }
+
+
+    // Log initial page load
+    log('🚀 Emergency call test page loaded');
+    log('✅ Server connection: OK');
+  </script>
+</body>
+</html>

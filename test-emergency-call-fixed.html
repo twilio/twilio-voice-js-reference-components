@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Call Test - Fixed</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 30px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .alert {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .success {
+      background: #d4edda;
+      border-color: #28a745;
+      color: #155724;
+    }
+    .info {
+      background: #d1ecf1;
+      border-color: #17a2b8;
+      color: #0c5460;
+    }
+    .danger {
+      background: #f8d7da;
+      border-color: #dc3545;
+      color: #721c24;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    label {
+      font-weight: 600;
+      color: #333;
+      display: block;
+      margin-top: 15px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px 0 0;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button.danger {
+      background: #dc3545;
+    }
+    button.danger:hover {
+      background: #c82333;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+    .log-container {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      font-family: monospace;
+      font-size: 12px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+    .emergency-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+    .priority-critical { background: #dc3545; color: white; }
+    .priority-high { background: #ff6b6b; color: white; }
+    .priority-medium { background: #ffc107; color: black; }
+    .priority-low { background: #28a745; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚨 Emergency Call Test - Fixed</h1>
+    <p class="subtitle">Test emergency parameters passed through device.connect()</p>
+
+    <div class="alert info">
+      <strong>ℹ️ Instructions:</strong>
+      <ol style="margin: 10px 0 0 0; padding-left: 20px;">
+        <li>Click "Initialize Device" to connect to Twilio</li>
+        <li>Fill in the recipient and emergency details below</li>
+        <li>Click "Make Emergency Call"</li>
+        <li><strong>Check your server console</strong> for emergency logs - you should see the parameters printed</li>
+      </ol>
+    </div>
+
+    <div id="status" class="alert"></div>
+
+    <label>Recipient (phone number or client identity)*</label>
+    <input type="text" id="recipient" placeholder="e.g., +12345678900 or bob" value="bob">
+
+    <label>Emergency Type*</label>
+    <select id="emergencyType">
+      <option value="">Select emergency type...</option>
+      <option value="medical">🏥 Medical Emergency</option>
+      <option value="fire">🔥 Fire</option>
+      <option value="police">🚔 Police/Security</option>
+      <option value="accident" selected>🚗 Accident</option>
+      <option value="natural_disaster">🌪️ Natural Disaster</option>
+      <option value="other">⚠️ Other</option>
+    </select>
+
+    <label>Emergency Location*</label>
+    <input type="text" id="emergencyLocation" placeholder="e.g., 123 Main St, Building A, Floor 3" value="123 Main Street, Downtown">
+
+    <label>Priority Level*</label>
+    <select id="emergencyPriority">
+      <option value="">Select priority...</option>
+      <option value="low">Low - Non-urgent</option>
+      <option value="medium">Medium - Timely response needed</option>
+      <option value="high" selected>High - Urgent</option>
+      <option value="critical">Critical - Life threatening</option>
+    </select>
+
+    <div style="margin-top: 20px;">
+      <button id="initBtn" onclick="initDevice()">Initialize Device</button>
+      <button id="callBtn" onclick="makeEmergencyCall()" disabled>Make Emergency Call</button>
+      <button class="danger" id="hangupBtn" onclick="hangup()" disabled>Hang Up</button>
+    </div>
+
+    <div class="log-container">
+      <strong>📋 Event Log:</strong>
+      <div id="logs"></div>
+    </div>
+  </div>
+
+  <script src="/twilio.min.js"></script>
+  <script>
+    let device = null;
+    let call = null;
+
+    function log(message, data = null) {
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry';
+      const timestamp = new Date().toLocaleTimeString();
+      logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+
+      if (data) {
+        logEntry.innerHTML += `<br><pre style="margin: 5px 0 0 20px;">${JSON.stringify(data, null, 2)}</pre>`;
+      }
+
+      document.getElementById('logs').appendChild(logEntry);
+      document.querySelector('.log-container').scrollTop = document.querySelector('.log-container').scrollHeight;
+    }
+
+    function showStatus(message, type = 'info') {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = `alert ${type}`;
+      status.style.display = 'block';
+    }
+
+    async function initDevice() {
+      try {
+        showStatus('Initializing Twilio Device...', 'info');
+        log('🔄 Fetching access token...');
+
+        const response = await fetch('/twilio-voice-dialer/token');
+        const data = await response.json();
+
+        log('✅ Token received');
+
+        device = new Twilio.Device(data.token, {
+          codecPreferences: ['opus', 'pcmu'],
+          logLevel: 1
+        });
+
+        device.on('registered', () => {
+          log('✅ Device registered successfully');
+          showStatus('Device ready! You can now make emergency calls.', 'success');
+          document.getElementById('initBtn').disabled = true;
+          document.getElementById('callBtn').disabled = false;
+        });
+
+        device.on('error', (error) => {
+          log('❌ Device error: ' + error.message, error);
+          showStatus('Error: ' + error.message, 'danger');
+        });
+
+        log('📞 Registering device...');
+        await device.register();
+
+      } catch (error) {
+        log('❌ Failed to initialize device: ' + error.message, error);
+        showStatus('Failed to initialize: ' + error.message, 'danger');
+      }
+    }
+
+    async function makeEmergencyCall() {
+      const recipient = document.getElementById('recipient').value;
+      const emergencyType = document.getElementById('emergencyType').value;
+      const emergencyLocation = document.getElementById('emergencyLocation').value;
+      const emergencyPriority = document.getElementById('emergencyPriority').value;
+
+      if (!recipient) {
+        showStatus('Please enter a recipient', 'danger');
+        return;
+      }
+
+      if (!emergencyType || !emergencyLocation || !emergencyPriority) {
+        showStatus('Please fill in all emergency fields', 'danger');
+        return;
+      }
+
+      try {
+        // Build params object with ALL parameters including recipient
+        const params = {
+          recipient: recipient,
+          emergencyType: emergencyType,
+          emergencyLocation: emergencyLocation,
+          emergencyPriority: emergencyPriority
+        };
+
+        log('🚨 Initiating emergency call with parameters:', params);
+        showStatus('Connecting emergency call...', 'info');
+
+        // Make the call using device.connect with params
+        // These params will be sent to your TwiML webhook as part of the request body
+        call = await device.connect({ params });
+
+        call.on('accept', () => {
+          log('📞 Call connected successfully');
+          const badge = getPriorityBadge(emergencyPriority);
+          showStatus(`Emergency call in progress ${badge}`, 'success');
+          document.getElementById('callBtn').disabled = true;
+          document.getElementById('hangupBtn').disabled = false;
+        });
+
+        call.on('disconnect', () => {
+          log('📴 Call disconnected');
+          showStatus('Call ended', 'info');
+          document.getElementById('callBtn').disabled = false;
+          document.getElementById('hangupBtn').disabled = true;
+          call = null;
+        });
+
+        call.on('error', (error) => {
+          log('❌ Call error: ' + error.message, error);
+          showStatus('Call error: ' + error.message, 'danger');
+        });
+
+        call.on('ringing', () => {
+          log('📲 Call is ringing...');
+        });
+
+      } catch (error) {
+        log('❌ Failed to make call: ' + error.message, error);
+        showStatus('Failed to connect: ' + error.message, 'danger');
+      }
+    }
+
+    function hangup() {
+      if (call) {
+        call.disconnect();
+        log('👋 Hanging up call');
+      }
+    }
+
+    function getPriorityBadge(priority) {
+      const badges = {
+        critical: '<span class="emergency-badge priority-critical">CRITICAL</span>',
+        high: '<span class="emergency-badge priority-high">HIGH</span>',
+        medium: '<span class="emergency-badge priority-medium">MEDIUM</span>',
+        low: '<span class="emergency-badge priority-low">LOW</span>'
+      };
+      return badges[priority] || '';
+    }
+
+    // Log initial page load
+    log('🚀 Emergency call test page loaded');
+    log('📡 Waiting for device initialization...');
+  </script>
+</body>
+</html>

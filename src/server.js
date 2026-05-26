@@ -4,11 +4,17 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import { existsSync, readdirSync } from 'fs'
-
+import fetch from 'node-fetch'; globalThis.fetch = fetch;
 const app = express();
 const server = http.createServer(app);
 const componentsDir = path.join(process.cwd(), 'src/components');
 const { port } = config;
+
+app.use(bodyParser.text());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); 
+app.use(express.json());
 
 // Serve the public folder of each component
 readdirSync(componentsDir, { withFileTypes: true })
@@ -27,9 +33,8 @@ readdirSync(componentsDir, { withFileTypes: true })
 // Serve the SDK
 app.use('/', express.static(path.join(process.cwd(), 'node_modules/@twilio/voice-sdk/dist')));
 
-app.use(bodyParser.text());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Serve static files from root directory (for test HTML files)
+app.use('/', express.static(process.cwd()));
 
 app.use((req, res, next) => {
   console.log('Received request for: ' + req.url);
