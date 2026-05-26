@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import Twilio from 'twilio';
 import config from '../config.js';
 import { isPhoneNumber } from './utils.js'; 
+import { Threads } from 'openai/resources/beta.js';
 
 const AccessToken = Twilio.jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
@@ -41,14 +42,18 @@ export const tokenHandler = (req, res) => {
  */
 export const twimlHandler = (req, res, componentUrl, options = {}) => {
   console.log('=== TwiML Handler Called ===');
-  console.log('All keys in body:', req.body); 
+  console.log('Request Method:', req.method);
+  console.log('Request URL:', req.url);
+  console.log('Request Body:', JSON.stringify(req.body, null, 2));
+  console.log('Request Query:', JSON.stringify(req.query, null, 2));
+  console.log('Request Headers:', JSON.stringify(req.headers, null, 2)); 
 
   const {
     calleeStatusCallbackEvent = [],
     calleeLabel = 'callee',
     callerLabel = 'caller',
     endConferenceOnExit = true,
-    maxParticipants = 2,
+    maxParticipants = 4,
     statusCallbackEvent = '',
   } = options;
   const twiml = new VoiceResponse();
@@ -73,8 +78,21 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
 
   // Generates 1:1 conference
   const roomName = `conference-${crypto.randomUUID()}`;
-  let recipient =   req.body.To; 
+  // Extract recipient from custom params (passed via device.connect({params: {recipient}}))
+  console.log('🔍 Extracting recipient:');
+  console.log('  ALL req.body keys:', Object.keys(req.body));
+  console.log('  ALL req.body values:', req.body);
+  console.log('  req.body.recipient:', req.body.recipient);
+  console.log('  req.query.recipient:', req.query.recipient);
+  console.log('  req.body.To:', req.body.To);
+  console.log('  defaultIdentity:', defaultIdentity);
+
+  // Custom params from device.connect are sent directly in req.body
+  // Check multiple possible field names: recipient (regular calls), Agent (emergency calls), or To
+  let recipient = req.body.recipient || req.body.Agent || req.query.recipient || defaultIdentity;
+  console.log('  FINAL recipient (before formatting):', recipient);
   recipient = isPhoneNumber(recipient) ? recipient : 'client:' + recipient;
+  console.log('  FINAL recipient (after formatting):', recipient);
 
   // Build statusCallback URL with emergency parameters
   const statusCallbackUrl = new URL(`https://${callbackBaseUrl}/${componentUrl}/conference-events`);
@@ -135,12 +153,14 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
   console.log('Status Callback Events:', calleeStatusCallbackEvent);
   console.log('=====================================');
  
+  // Add the Agent (security personnel) to the conference
   client.conferences(roomName).participants.create({
     beep: 'false',
-    endConferenceOnExit: true,
+    endConferenceOnExit: false,
+    startConferenceOnEnter: true,
     from: callerId,
     // Label to identify this participant
-    label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-${calleeLabel}`,
+    label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-agent`,
     // Callee's progress/status
     // https://www.twilio.com/docs/voice/api/conference-participant-resource#request-body-parameters
     statusCallback:
@@ -151,20 +171,63 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
     to: recipient,
   })
   .then((participant) => {
-    console.log('✅ Participant created successfully:', {
+    console.log('✅ Agent participant created successfully:', {
       callSid: participant.callSid,
       label: participant.label,
       status: participant.status,
+      to: recipient,
     });
   })
   .catch((error) => {
-    console.error('❌ Failed to create participant:', {
+    console.error('❌ Failed to create agent participant:', {
       message: error.message,
       code: error.code,
       moreInfo: error.moreInfo,
       details: error.details,
     });
   });
+
+
+
+  // Add the Emergency provider (933/911) to the conference
+  const emergencyNumber = req.body.To;
+  if (emergencyNumber && (emergencyNumber.includes('933') || emergencyNumber.includes('911'))) {
+    console.log('📞 Adding emergency provider to conference:', emergencyNumber);
+    client.conferences(roomName).participants.create({
+      beep: 'false',
+      endConferenceOnExit: false,
+      startConferenceOnEnter: true,
+      from: callerId,
+      label: 'emergency-provider',
+      to: emergencyNumber,
+      // add emergencyParams here 
+      // emergencyCallerPosition: emergencyParams.emergencyCallerPosition,
+      // emergencyCallerLocation: emergencyParams.emergencyCallerLocation,
+      // emergencyName: emergencyParams.emergencyName,
+      // emergencyAddress: emergencyParams.emergencyAddress,
+      // emergencyZipCode: emergencyParams.emergencyZipCode,
+      // emergencyCity: emergencyParams.emergencyCity,
+      // emergencyState: emergencyParams.emergencyState,
+      // emergencyCountry: emergencyParams.emergencyCountry,
+    })
+    .then((participant) => {
+      console.log('✅ Emergency provider participant created successfully:', {
+        callSid: participant.callSid,
+        label: participant.label,
+        status: participant.status,
+        to: emergencyNumber,
+      });
+    })
+    .catch((error) => {
+      console.error('❌ Failed to create emergency provider participant:', {
+        message: error.message,
+        code: error.code,
+        moreInfo: error.moreInfo,
+        details: error.details,
+        emergencyNumber: emergencyNumber,
+      });
+    });
+  }
 
   res.header('Content-Type', 'text/xml').status(200).send(twiml.toString());
 };
