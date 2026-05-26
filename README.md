@@ -20,6 +20,11 @@ The reference components demonstrate several common Twilio Voice use cases. Thes
   - View quality metrics
   - Receive warnings
   - View errors
+- Emergency Conference (uses Conference)
+  - Make emergency calls (933/911) with security agent escalation
+  - Pass emergency location metadata (GPS coordinates, address, etc.)
+  - Track emergency parameters through conference lifecycle
+  - Multi-party conference with caller, emergency provider, and security agent
 - Voice AI Conversation
   - Place an outbound call and connect to an agent
   - Provide a Websocket server to interface with Conversation Relay
@@ -51,6 +56,7 @@ cp example.env .env
 https://yourdomain/twilio-voice-dialer/twiml
 https://yourdomain/twilio-voice-basic-call-control/twiml
 https://yourdomain/twilio-voice-monitoring/twiml
+https://yourdomain/twilio-voice-emergency/twiml
 https://yourdomain/twilio-voice-ai-conversation/twiml
 ```
 
@@ -67,16 +73,89 @@ npm start
 - Dialer: [http://localhost:3030/twilio-voice-dialer?identity=bob](http://localhost:3030/twilio-voice-dialer?identity=bob).
 - Basic Call Control: [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
 - Monitoring: [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
+- Emergency Conference: [http://localhost:3030/test-emergency-call.html](http://localhost:3030/test-emergency-call.html)
 - Voice AI Conversation: [http://localhost:3030/twilio-voice-ai-conversation?identity=bob](http://localhost:3030/twilio-voice-ai-conversation?identity=bob).
 
-## Testing Emergency Calls
+## Emergency Conference
 
-To test emergency call parameters in conference calls:
+Make emergency calls (933/911) with simultaneous connection to security agents and location metadata.
 
-1. Navigate to [http://localhost:3030/test-emergency-call.html](http://localhost:3030/test-emergency-call.html)
-2. Click "Initialize Device" to connect to Twilio
-3. Fill in the emergency details (recipient, location, position, address, etc.)
-4. Click "Make Emergency Call"
-5. Check the event log in the browser and your server console for emergency parameter logs
+### How Emergency Details Are Passed
 
-The test page includes pre-filled example values and validates all required emergency fields before making the call.
+#### 1. Client Side - Pass emergency parameters via `device.connect()`
+
+```javascript
+const call = await device.connect({
+  params: {
+    To: '+1933',                          // Emergency number
+    Agent: 'bob',                         // Security agent
+    emergencyCallerPosition: '41.10 39.8', // GPS coordinates
+    emergencyCallerLocation: 'Floor 3 Cubicle 2',
+    emergencyName: 'Twilio Inc',
+    emergencyAddress: '101 Spear Drive',
+    emergencyZipCode: '94105',
+    emergencyCity: 'San Francisco',
+    emergencyState: 'CA',
+    emergencyCountry: 'USA'
+  }
+});
+```
+
+#### 2. Server Side - Extract parameters in TwiML handler
+
+Parameters are received in `req.body` at your TwiML endpoint (`/twilio-voice-emergency/twiml`):
+
+```javascript
+const emergencyParams = {
+  emergencyCallerPosition: req.body.emergencyCallerPosition,
+  emergencyCallerLocation: req.body.emergencyCallerLocation,
+  emergencyName: req.body.emergencyName,
+  emergencyAddress: req.body.emergencyAddress,
+  emergencyZipCode: req.body.emergencyZipCode,
+  emergencyCity: req.body.emergencyCity,
+  emergencyState: req.body.emergencyState,
+  emergencyCountry: req.body.emergencyCountry,
+};
+```
+
+#### 3. Pass to Emergency Participant API Call
+
+Emergency details must be passed when creating the emergency provider participant:
+
+```javascript
+const emergencyNumber = req.body.To; // e.g., '+1933'
+
+client.conferences(roomName).participants.create({
+  beep: 'false',
+  from: callerId,
+  to: emergencyNumber,
+  label: 'emergency-provider',
+  // Pass emergency parameters to the emergency provider
+  emergencyCallerPosition: emergencyParams.emergencyCallerPosition,
+  emergencyCallerLocation: emergencyParams.emergencyCallerLocation,
+  emergencyName: emergencyParams.emergencyName,
+  emergencyAddress: emergencyParams.emergencyAddress,
+  emergencyZipCode: emergencyParams.emergencyZipCode,
+  emergencyCity: emergencyParams.emergencyCity,
+  emergencyState: emergencyParams.emergencyState,
+  emergencyCountry: emergencyParams.emergencyCountry,
+});
+```
+
+**Note:** In `src/common/routes.js` (lines 203-211), these parameters are currently commented out. Uncomment them to pass emergency details to the participant creation API.
+
+### Quick Test
+
+1. Start server: `npm start`
+2. Open [http://localhost:3030/test-emergency-call.html](http://localhost:3030/test-emergency-call.html)
+3. Click "Initialize Device"
+4. Fill emergency details (pre-filled with examples)
+5. Click "Make Emergency Call"
+6. Check server console for emergency parameter logs
+
+### Configuration
+
+Set TwiML App Voice Request URL in Twilio Console:
+```
+https://yourdomain/twilio-voice-emergency/twiml
+```
