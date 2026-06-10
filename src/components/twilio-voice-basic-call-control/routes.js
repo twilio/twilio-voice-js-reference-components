@@ -30,7 +30,7 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
       maxParticipants: 3,
       // Allow agent1 to drop from call, while agent2 and customer continue call.
       endConferenceOnExit: false,
-      statusCallbackEvent: 'join, leave, mute, hold',
+      statusCallbackEvent: 'join leave mute hold',
     }
   )
 );
@@ -60,41 +60,53 @@ router.post('/conferences/:conferenceSid/participants', async (req, res) => {
   let to = req.body.to;
   to = isPhoneNumber(to) ? to : 'client:' + to;
 
-  // Add agent2 to the conference
-  await client.conferences(conferenceSid).participants.create({
-    label: `${isPhoneNumber(to) ? 'number' : 'client'}-agent2`,
-    from: callerId,
-    to,
-    endConferenceOnExit: true,
-  });
-
-  res.sendStatus(200);
+  try {
+    // Add agent2 to the conference
+    await client.conferences(conferenceSid).participants.create({
+      label: `${isPhoneNumber(to) ? 'number' : 'client'}-agent2`,
+      from: callerId,
+      to,
+      endConferenceOnExit: true,
+    });
+    res.sendStatus(200);
+  } catch (error) {
+    console.error(`Failed to add participant to conference ${conferenceSid}:`, error);
+    res.status(500).send({ error: error.message });
+  }
 });
 
 router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res) => {
   const { callSid, conferenceSid } = req.params;
 
-  // Update a Participant resource
-  // https://www.twilio.com/docs/voice/api/conference-participant-resource#update-a-participant-resource
-  await client
-    .conferences(conferenceSid)
-    .participants(callSid)
-    .update(req.body);
-
-  res.sendStatus(200);
+  try {
+    // Update a Participant resource
+    // https://www.twilio.com/docs/voice/api/conference-participant-resource#update-a-participant-resource
+    await client
+      .conferences(conferenceSid)
+      .participants(callSid)
+      .update(req.body);
+    res.sendStatus(200);
+  } catch (error) {
+    console.error(`Failed to update participant ${callSid} in conference ${conferenceSid}:`, error);
+    res.status(500).send({ error: error.message });
+  }
 });
 
 router.delete('/conferences/:conferenceSid/participants/:callSid', async (req, res) => {
   const { callSid, conferenceSid } = req.params;
 
-  // Delete a Participant resource
-  // https://www.twilio.com/docs/voice/api/conference-participant-resource#delete-a-participant-resource
-  await client
-    .conferences(conferenceSid)
-    .participants(callSid)
-    .remove();
-
-  res.sendStatus(200);
+  try {
+    // Delete a Participant resource
+    // https://www.twilio.com/docs/voice/api/conference-participant-resource#delete-a-participant-resource
+    await client
+      .conferences(conferenceSid)
+      .participants(callSid)
+      .remove();
+    res.sendStatus(200);
+  } catch (error) {
+    console.error(`Failed to remove participant ${callSid} from conference ${conferenceSid}:`, error);
+    res.status(500).send({ error: error.message });
+  }
 });
 
 export default router;

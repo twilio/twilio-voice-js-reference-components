@@ -45,7 +45,15 @@ npm install
 cp example.env .env
 ```
 
-4. In the Twilio Console, open your **TwiML App** settings and set **Voice Request URL** to the endpoint for the component you want to test:
+4. Expose your local server to the public internet so Twilio can reach it for webhooks. If you run the components locally, use a tunneling service such as [ngrok](https://ngrok.com/).
+
+```bash
+ngrok http 3030
+```
+
+Copy the forwarding host that ngrok prints (e.g. `abc123.ngrok-free.app`) and set it as `CALLBACK_BASE_URL` in your `.env` — **without** the `https://` scheme, since the code prepends `https://` / `wss://` itself. If you changed `PORT`, tunnel to that port instead of `3030`.
+
+5. In the Twilio Console, open your **TwiML App** settings and set **Voice Request URL** to the endpoint for the component you want to test, using your public host from step 4 in place of `yourdomain`:
 
 ```text
 https://yourdomain/twilio-voice-dialer/twiml

@@ -39,7 +39,7 @@ export const tokenHandler = (req, res) => {
 /**
  * Handler for the TwiML App Webhook, set in the User's Twilio Console.
  */
-export const twimlHandler = (req, res, componentUrl, options = {}) => {
+export const twimlHandler = async (req, res, componentUrl, options = {}) => {
   const {
     calleeStatusCallbackEvent = [],
     calleeLabel = 'callee',
@@ -74,24 +74,32 @@ export const twimlHandler = (req, res, componentUrl, options = {}) => {
     roomName
   );
 
-  // Add the callee to the conference
-  client.conferences(roomName).participants.create({
-    beep: 'false',
-    endConferenceOnExit: true,
-    from: callerId,
-    // Label to identify this participant
-    label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-${calleeLabel}`,
-    // Callee's progress/status
-    // https://www.twilio.com/docs/voice/api/conference-participant-resource#request-body-parameters
-    statusCallback:
-      calleeStatusCallbackEvent.length > 0
-        ? `https://${callbackBaseUrl}/${componentUrl}/call-events`
-        : '',
-    statusCallbackEvent: calleeStatusCallbackEvent,
-    to: recipient,
-  });
-
+  // Respond with the TwiML first so the caller joins and creates the conference
+  // with the statusCallback configured above. If the callee were added first,
+  // the REST API would create the conference without a status callback and no
+  // conference events would ever be delivered.
   res.header('Content-Type', 'text/xml').status(200).send(twiml.toString());
+
+  // Add the callee to the conference
+  try {
+    await client.conferences(roomName).participants.create({
+      beep: 'false',
+      endConferenceOnExit: true,
+      from: callerId,
+      // Label to identify this participant
+      label: `${isPhoneNumber(recipient) ? 'number' : 'client'}-${calleeLabel}`,
+      // Callee's progress/status
+      // https://www.twilio.com/docs/voice/api/conference-participant-resource#request-body-parameters
+      statusCallback:
+        calleeStatusCallbackEvent.length > 0
+          ? `https://${callbackBaseUrl}/${componentUrl}/call-events`
+          : '',
+      statusCallbackEvent: calleeStatusCallbackEvent,
+      to: recipient,
+    });
+  } catch (error) {
+    console.error(`Failed to add callee to conference ${roomName}:`, error);
+  }
 };
 
 /**
@@ -126,56 +134,74 @@ export const conferenceEventsHandler = async (req, res, componentUrl, options = 
   }
 
   if (shouldSendMessage) {
-    const participants = await client
-      .conferences(ConferenceSid)
-      .participants.list();
+    try {
+      const participants = await client
+        .conferences(ConferenceSid)
+        .participants.list();
 
-    // Send the conference sid and the other participants' callSids to any client leg.
-    // The sids will be used to update the participant resource such as putting it on hold.
-    participants.forEach(async (currentParticipant) => {
-      if (currentParticipant.label.split('-')[0] === 'client') {
+      // Send the conference sid and the other participants' callSids to any client leg.
+      // The sids will be used to update the participant resource such as putting it on hold.
+      const clientParticipants = participants.filter(
+        (participant) => participant.label?.split('-')[0] === 'client'
+      );
+
+      // Collect every message to send so we can await them and surface failures
+      // instead of firing async callbacks inside forEach (unhandled rejections).
+      const messages = [];
+      clientParticipants.forEach((currentParticipant) => {
         // When the StatusCallbackEvent is 'participant-leave', the req.body contains data
         // from the participant that left the conference. Send the callSid and data of the
         // participant that left the conference to all current client legs.
         if (StatusCallbackEvent === 'participant-leave') {
-          await client
-            .calls(currentParticipant.callSid)
-            .userDefinedMessages
-            .create({
-              content: JSON.stringify({
-                callSid: CallSid,
-                category: 'conference-status',
-                conferenceSid: ConferenceSid,
-                hold: Hold,
-                label: ParticipantLabel,
-                muted: Muted,
-                remove: true,
-                statusCallbackEvent: StatusCallbackEvent,
-              }),
-            });
+          messages.push({
+            callSid: currentParticipant.callSid,
+            content: {
+              callSid: CallSid,
+              category: 'conference-status',
+              conferenceSid: ConferenceSid,
+              hold: Hold,
+              label: ParticipantLabel,
+              muted: Muted,
+              remove: true,
+              statusCallbackEvent: StatusCallbackEvent,
+            },
+          });
         } else {
           participants
-            .filter((p) => p.callSid !== currentParticipant.callSid)
-            .forEach(async (otherParticipant) => {
-              await client
-                .calls(currentParticipant.callSid)
-                .userDefinedMessages
-                .create({
-                  content: JSON.stringify({
-                    callSid: otherParticipant.callSid,
-                    category: 'conference-status',
-                    conferenceSid: ConferenceSid,
-                    hold: otherParticipant.hold,
-                    label: otherParticipant.label,
-                    muted: otherParticipant.muted,
-                    remove: false,
-                    statusCallbackEvent: StatusCallbackEvent,
-                  }),
-                });
+            .filter((participant) => participant.callSid !== currentParticipant.callSid)
+            .forEach((otherParticipant) => {
+              messages.push({
+                callSid: currentParticipant.callSid,
+                content: {
+                  callSid: otherParticipant.callSid,
+                  category: 'conference-status',
+                  conferenceSid: ConferenceSid,
+                  hold: otherParticipant.hold,
+                  label: otherParticipant.label,
+                  muted: otherParticipant.muted,
+                  remove: false,
+                  statusCallbackEvent: StatusCallbackEvent,
+                },
+              });
             });
         }
-      }
-    });
+      });
+
+      const results = await Promise.allSettled(
+        messages.map(({ callSid, content }) =>
+          client.calls(callSid).userDefinedMessages.create({
+            content: JSON.stringify(content),
+          })
+        )
+      );
+      results
+        .filter((result) => result.status === 'rejected')
+        .forEach((result) =>
+          console.error('Failed to send conference-status message:', result.reason)
+        );
+    } catch (error) {
+      console.error(`Failed to handle conference event for ${ConferenceSid}:`, error);
+    }
   }
 
   res.sendStatus(200);
