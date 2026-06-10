@@ -71,7 +71,7 @@ router.post('/conferences/:conferenceSid/participants', async (req, res) => {
     res.sendStatus(200);
   } catch (error) {
     console.error(`Failed to add participant to conference ${conferenceSid}:`, error);
-    res.status(500).send({ error: error.message });
+    res.status(500).send({ error: 'Failed to add participant to conference' });
   }
 });
 
@@ -88,7 +88,7 @@ router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res
     res.sendStatus(200);
   } catch (error) {
     console.error(`Failed to update participant ${callSid} in conference ${conferenceSid}:`, error);
-    res.status(500).send({ error: error.message });
+    res.status(500).send({ error: 'Failed to update conference participant' });
   }
 });
 
@@ -105,7 +105,7 @@ router.delete('/conferences/:conferenceSid/participants/:callSid', async (req, r
     res.sendStatus(200);
   } catch (error) {
     console.error(`Failed to remove participant ${callSid} from conference ${conferenceSid}:`, error);
-    res.status(500).send({ error: error.message });
+    res.status(500).send({ error: 'Failed to remove conference participant' });
   }
 });
 

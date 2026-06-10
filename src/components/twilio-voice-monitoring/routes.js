@@ -63,11 +63,11 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
     console.error('Failed to map callee to caller in conference-events:', error);
   }
 
-  conferenceEventsHandler(
+  return conferenceEventsHandler(
     req,
     res,
     componentUrl
-  )
+  );
 });
 
 // Validate incoming Twilio requests
@@ -98,8 +98,9 @@ router.post('/call-events', Twilio.webhook({ protocol: 'https' }, authToken), as
             }),
           });
       }
-      // Once the callee call is finished, drop the mapping to avoid leaking entries.
-      if (CallStatus === 'completed') {
+      // Once the callee call reaches any terminal status, drop the mapping to
+      // avoid leaking entries for calls that never reach 'completed'.
+      if (['completed', 'failed', 'busy', 'no-answer', 'canceled'].includes(CallStatus)) {
         calleeToCaller.delete(CallSid);
       }
     }
