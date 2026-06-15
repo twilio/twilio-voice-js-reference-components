@@ -98,7 +98,12 @@ export const twimlHandler = async (req, res, componentUrl, options = {}) => {
       to: recipient,
     });
   } catch (error) {
-    console.error(`Failed to add callee to conference ${roomName}:`, error);
+    // The TwiML response was already sent, so the caller is in an empty
+    // conference and the failure can only be surfaced via these logs.
+    console.error(`Failed to add callee to conference ${roomName}:`, error.message, {
+      status: error.status,
+      code: error.code,
+    });
   }
 };
 
@@ -200,7 +205,13 @@ export const conferenceEventsHandler = async (req, res, componentUrl, options = 
           console.error('Failed to send conference-status message:', result.reason)
         );
     } catch (error) {
-      console.error(`Failed to handle conference event for ${ConferenceSid}:`, error);
+      // Log only the error summary, not the full Twilio error object, which can
+      // carry account SIDs, API response bodies, or PII into log aggregators.
+      console.error(
+        `Failed to handle conference event for ${ConferenceSid}:`,
+        error.message,
+        { status: error.status, code: error.code }
+      );
     }
   }
 

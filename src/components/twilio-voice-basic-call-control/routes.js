@@ -18,12 +18,9 @@ router.get('/token', (req, res) => tokenHandler(req, res));
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
-  twimlHandler(
-    req,
-    res,
-    componentUrl,
-    {
+router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) => {
+  try {
+    await twimlHandler(req, res, componentUrl, {
       callerLabel: 'agent1',
       calleeLabel: 'customer',
       // 3 participants needed for warm transfer: agent1, agent2, and customer.
@@ -31,9 +28,15 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), (req, re
       // Allow agent1 to drop from call, while agent2 and customer continue call.
       endConferenceOnExit: false,
       statusCallbackEvent: 'join leave mute hold',
-    }
-  )
-);
+    });
+  } catch (error) {
+    console.error('Failed to handle twiml:', error.message, {
+      status: error.status,
+      code: error.code,
+    });
+    if (!res.headersSent) res.sendStatus(500);
+  }
+});
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
@@ -78,13 +81,20 @@ router.post('/conferences/:conferenceSid/participants', async (req, res) => {
 router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res) => {
   const { callSid, conferenceSid } = req.params;
 
+  // Whitelist only the fields the UI controls. Passing req.body straight to
+  // update() would forward arbitrary Participant resource fields (e.g.
+  // coaching, callSidToCoach), letting anyone with a valid token set sensitive
+  // params. https://www.twilio.com/docs/voice/api/conference-participant-resource#update-a-participant-resource
+  const update = {};
+  if ('hold' in req.body) update.hold = req.body.hold;
+  if ('muted' in req.body) update.muted = req.body.muted;
+
   try {
     // Update a Participant resource
-    // https://www.twilio.com/docs/voice/api/conference-participant-resource#update-a-participant-resource
     await client
       .conferences(conferenceSid)
       .participants(callSid)
-      .update(req.body);
+      .update(update);
     res.sendStatus(200);
   } catch (error) {
     console.error(`Failed to update participant ${callSid} in conference ${conferenceSid}:`, error);
