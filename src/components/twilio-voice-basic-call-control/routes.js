@@ -40,12 +40,9 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), async (r
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
-  conferenceEventsHandler(
-    req,
-    res,
-    componentUrl,
-    {
+router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) => {
+  try {
+    await conferenceEventsHandler(req, res, componentUrl, {
       statusCallbackEvents: [
         'participant-join',
         'participant-mute',
@@ -54,9 +51,15 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
         'participant-unhold',
         'participant-leave',
       ],
-    }
-  )
-);
+    });
+  } catch (error) {
+    console.error('Failed to handle conference-events:', error.message, {
+      status: error.status,
+      code: error.code,
+    });
+    if (!res.headersSent) res.sendStatus(200);
+  }
+});
 
 router.post('/conferences/:conferenceSid/participants', async (req, res) => {
   const { conferenceSid } = req.params;
@@ -73,7 +76,7 @@ router.post('/conferences/:conferenceSid/participants', async (req, res) => {
     });
     res.sendStatus(200);
   } catch (error) {
-    console.error(`Failed to add participant to conference ${conferenceSid}:`, error);
+    console.error(`Failed to add participant to conference ${conferenceSid}:`, error.message, { status: error.status, code: error.code });
     res.status(500).send({ error: 'Failed to add participant to conference' });
   }
 });
@@ -97,7 +100,7 @@ router.post('/conferences/:conferenceSid/participants/:callSid', async (req, res
       .update(update);
     res.sendStatus(200);
   } catch (error) {
-    console.error(`Failed to update participant ${callSid} in conference ${conferenceSid}:`, error);
+    console.error(`Failed to update participant ${callSid} in conference ${conferenceSid}:`, error.message, { status: error.status, code: error.code });
     res.status(500).send({ error: 'Failed to update conference participant' });
   }
 });
@@ -114,7 +117,7 @@ router.delete('/conferences/:conferenceSid/participants/:callSid', async (req, r
       .remove();
     res.sendStatus(200);
   } catch (error) {
-    console.error(`Failed to remove participant ${callSid} from conference ${conferenceSid}:`, error);
+    console.error(`Failed to remove participant ${callSid} from conference ${conferenceSid}:`, error.message, { status: error.status, code: error.code });
     res.status(500).send({ error: 'Failed to remove conference participant' });
   }
 });

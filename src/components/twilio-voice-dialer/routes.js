@@ -30,12 +30,16 @@ router.post('/twiml', Twilio.webhook({ protocol: 'https' }, authToken), async (r
 
 // Validate incoming Twilio requests
 // https://www.twilio.com/docs/usage/tutorials/how-to-secure-your-express-app-by-validating-incoming-twilio-requests
-router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), (req, res) =>
-  conferenceEventsHandler(
-    req,
-    res,
-    componentUrl
-  )
-);
+router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToken), async (req, res) => {
+  try {
+    await conferenceEventsHandler(req, res, componentUrl);
+  } catch (error) {
+    console.error('Failed to handle conference-events:', error.message, {
+      status: error.status,
+      code: error.code,
+    });
+    if (!res.headersSent) res.sendStatus(200);
+  }
+});
 
 export default router;

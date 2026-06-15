@@ -81,7 +81,7 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
         );
     }
   } catch (error) {
-    console.error('Failed to map callee to caller in conference-events:', error);
+    console.error('Failed to map callee to caller in conference-events:', error.message, { status: error.status, code: error.code });
   }
 
   try {
