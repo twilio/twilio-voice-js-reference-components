@@ -49,7 +49,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   async #handleAddConference() {
     const response = await this.#addConference();
     if (response.status !== 200) {
-      console.error('Unable to add participant to call: ', response.error);
+      console.error('Unable to add participant to call: ', (await response.json()).error);
     }
   }
 
@@ -72,7 +72,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
   async #handleForwardCall() {
     const response = await this.#addConference();
     if (response.status !== 200) {
-      console.error('Unable to forward call: ', response.error);
+      console.error('Unable to forward call: ', (await response.json()).error);
       return;
     }
 
@@ -85,7 +85,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     });
 
     if (response.status !== 200) {
-      console.error('Unable to set hold: ', response.error);
+      console.error('Unable to set hold: ', (await response.json()).error);
       return;
     }
     this.#showElement(`#${callSid}-hold`, !shouldHold);
@@ -98,7 +98,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     });
 
     if (response.status !== 200) {
-      console.error('Unable to set mute: ', response.error);
+      console.error('Unable to set mute: ', (await response.json()).error);
       return;
     }
     this.#showElement(`#${callSid}-mute`, !shouldMute);
@@ -116,7 +116,7 @@ class TwilioVoiceBasicCallControl extends HTMLElement {
     );
 
     if (response.status !== 200) {
-      console.error('Unable to remove participant: ', response.error);
+      console.error('Unable to remove participant: ', (await response.json()).error);
     }
   }
 
