@@ -205,7 +205,7 @@
         showStatus('Initializing Twilio Device...', 'info');
         log('Fetching access token...');
 
-        const response = await fetch('/twilio-voice-dialer/token');
+        const response = await fetch('/twilio-voice-emergency/token');
         const data = await response.json();
 
         device = new Twilio.Device(data.token, {
@@ -257,6 +257,8 @@
 
       try {
         const params = {
+          To: emergencyNumber,
+          Agent: recipient,
           emergencyCallerPosition,
           emergencyCallerLocation,
           emergencyName,
@@ -270,33 +272,9 @@
         log('🚨 Initiating emergency call with parameters:', params);
         showStatus('Connecting emergency call...', 'info');
 
-        const conferenceName = `emergency-${Date.now()}`;
-
-        // Generate TwiML to create conference, dial 933, and dial agent with emergency parameters
-        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-                        <Response>
-                          <Dial>
-                            <Conference beep="false" startConferenceOnEnter="true" endConferenceOnExit="true">${conferenceName}</Conference>
-                          </Dial>
-                        </Response>`;
-
-        log('Generated TwiML:', { twiml, conferenceName });
-
+        // Do NOT pass inline TwiML - let Twilio hit your TwiML App webhook
         call = await device.connect({
-          params: {
-            To: emergencyNumber,
-            Agent: recipient,
-            ConferenceName: conferenceName,
-            emergencyCallerPosition,
-            emergencyCallerLocation,
-            emergencyName,
-            emergencyAddress,
-            emergencyZipCode,
-            emergencyCity,
-            emergencyState,
-            emergencyCountry
-          },
-          twiml: twiml
+          params: params
         });
 
         call.on('accept', () => {
