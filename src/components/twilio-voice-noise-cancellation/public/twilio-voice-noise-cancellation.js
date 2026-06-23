@@ -32,10 +32,21 @@ class RnnoiseProcessor {
   }
 
   async createProcessedStream(stream) {
-    wasmBinaryPromise ??= loadRnnoise({
-      url: `${BASE}/rnnoise.wasm`,
-      simdUrl: `${BASE}/rnnoise_simd.wasm`,
-    });
+    // The SDK may call this repeatedly without an intervening destroy; tear down
+    // the previous graph first so we don't leak worklet nodes / RNNoise WASM heap.
+    await this.destroyProcessedStream();
+
+    if (!wasmBinaryPromise) {
+      // Clear the cache on failure so a later toggle retries; otherwise a single
+      // transient fetch error disables noise cancellation until a page reload.
+      wasmBinaryPromise = loadRnnoise({
+        url: `${BASE}/rnnoise.wasm`,
+        simdUrl: `${BASE}/rnnoise_simd.wasm`,
+      }).catch((error) => {
+        wasmBinaryPromise = undefined;
+        throw error;
+      });
+    }
     const wasmBinary = await wasmBinaryPromise;
 
     if (!workletAddedFor.has(this.#ctx)) {
