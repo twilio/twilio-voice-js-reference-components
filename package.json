@@ -9,6 +9,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@sapphi-red/web-noise-suppressor": "0.3.5",
     "@twilio/voice-sdk": "2.18.3",
     "dotenv": "17.4.2",
     "express": "4.22.2",
