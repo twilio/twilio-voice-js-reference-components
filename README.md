@@ -25,9 +25,9 @@ The reference components demonstrate several common Twilio Voice use cases. Thes
   - Provide a Websocket server to interface with Conversation Relay
   - Basic OpenAI integration
 - Noise Cancellation
-  - Denoise the outgoing microphone audio with RNNoise
-  - Denoise the incoming call audio with RNNoise
-  - Toggle each direction independently during a call
+  - Apply RNNoise noise suppression to outgoing microphone audio
+  - Apply RNNoise noise suppression to incoming call audio
+  - Independently enable or disable noise suppression for each audio direction during an active call
 
 ## Installation
 
