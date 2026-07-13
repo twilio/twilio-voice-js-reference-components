@@ -1,6 +1,7 @@
 {
   "name": "twilio-voice-js-reference-components",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "start": "node src/server.js",
     "postinstall": "node scripts/restore-lockfile-registry.cjs"
