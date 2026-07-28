@@ -1,9 +1,9 @@
 import {
   loadRnnoise,
   RnnoiseWorkletNode,
-} from '/twilio-voice-noise-cancellation/web-noise-suppressor/index.js';
+} from '/twilio-voice-rnnoise-noise-cancellation/web-noise-suppressor/index.js';
 
-const BASE = '/twilio-voice-noise-cancellation/web-noise-suppressor';
+const BASE = '/twilio-voice-rnnoise-noise-cancellation/web-noise-suppressor';
 
 // The RNNoise WASM binary is fetched once and shared by every processor.
 let wasmBinaryPromise;
@@ -153,6 +153,6 @@ class TwilioVoiceNoiseCancellation extends HTMLElement {
 }
 
 customElements.define(
-  'twilio-voice-noise-cancellation',
+  'twilio-voice-rnnoise-noise-cancellation',
   TwilioVoiceNoiseCancellation
 );

@@ -1,3 +1,7 @@
 node_modules
 .env
 .DS_Store
+
+# Krisp SDK library + models are proprietary (obtain from the Krisp SDK Portal); keep only the README
+src/components/twilio-voice-krisp-noise-cancellation/public/krisp/*
+!src/components/twilio-voice-krisp-noise-cancellation/public/krisp/README.md

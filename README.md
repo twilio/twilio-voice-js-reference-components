@@ -24,9 +24,13 @@ The reference components demonstrate several common Twilio Voice use cases. Thes
   - Place an outbound call and connect to an agent
   - Provide a Websocket server to interface with Conversation Relay
   - Basic OpenAI integration
-- Noise Cancellation
+- RNNoise Noise Cancellation
   - Apply RNNoise noise suppression to outgoing microphone audio
   - Apply RNNoise noise suppression to incoming call audio
+  - Independently enable or disable noise suppression for each audio direction during an active call
+- Krisp Noise Cancellation
+  - Apply Krisp noise suppression to outgoing microphone audio
+  - Apply Krisp noise suppression to incoming call audio
   - Independently enable or disable noise suppression for each audio direction during an active call
 
 ## Installation
@@ -64,7 +68,8 @@ https://yourdomain/twilio-voice-dialer/twiml
 https://yourdomain/twilio-voice-basic-call-control/twiml
 https://yourdomain/twilio-voice-monitoring/twiml
 https://yourdomain/twilio-voice-ai-conversation/twiml
-https://yourdomain/twilio-voice-noise-cancellation/twiml
+https://yourdomain/twilio-voice-rnnoise-noise-cancellation/twiml
+https://yourdomain/twilio-voice-krisp-noise-cancellation/twiml
 ```
 
 ## Run the project locally
@@ -81,4 +86,7 @@ npm start
 - Basic Call Control: [http://localhost:3030/twilio-voice-basic-call-control?identity=bob](http://localhost:3030/twilio-voice-basic-call-control?identity=bob).
 - Monitoring: [http://localhost:3030/twilio-voice-monitoring?identity=bob](http://localhost:3030/twilio-voice-monitoring?identity=bob).
 - Voice AI Conversation: [http://localhost:3030/twilio-voice-ai-conversation?identity=bob](http://localhost:3030/twilio-voice-ai-conversation?identity=bob).
-- Noise Cancellation: [http://localhost:3030/twilio-voice-noise-cancellation?identity=bob](http://localhost:3030/twilio-voice-noise-cancellation?identity=bob).
+- RNNoise Noise Cancellation: [http://localhost:3030/twilio-voice-rnnoise-noise-cancellation?identity=bob](http://localhost:3030/twilio-voice-rnnoise-noise-cancellation?identity=bob).
+- Krisp Noise Cancellation: [http://localhost:3030/twilio-voice-krisp-noise-cancellation?identity=bob](http://localhost:3030/twilio-voice-krisp-noise-cancellation?identity=bob).
+
+> **Krisp Noise Cancellation setup:** The Krisp SDK library and models are proprietary and not committed to this repo. Before using this component, download `@krispai/javascript-sdk` (v2.3.9) and its NC models from the [Krisp SDK Portal](https://sdk.krisp.ai) and place them in `src/components/twilio-voice-krisp-noise-cancellation/public/krisp/`. See that folder's `README.md` for the exact file layout.

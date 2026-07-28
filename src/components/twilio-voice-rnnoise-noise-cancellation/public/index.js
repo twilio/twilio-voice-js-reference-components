@@ -1,7 +1,7 @@
 (async function() {
   const urlParams = new URLSearchParams(window.location.search);
   const identity = urlParams.get('identity');
-  const tokenUrl = `/twilio-voice-noise-cancellation/token?identity=${identity}`;
+  const tokenUrl = `/twilio-voice-rnnoise-noise-cancellation/token?identity=${identity}`;
 
   const response = await fetch(tokenUrl);
   const data = await response.json();

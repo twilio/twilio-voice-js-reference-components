@@ -1,5 +1,4 @@
-import express, { Router } from 'express';
-import path from 'path';
+import { Router } from 'express';
 import Twilio from 'twilio';
 import config from '../../config.js';
 import {
@@ -10,7 +9,7 @@ import {
 
 const router = Router();
 const { authToken } = config;
-const componentUrl = 'twilio-voice-noise-cancellation';
+const componentUrl = 'twilio-voice-krisp-noise-cancellation';
 
 // Add your own authentication mechanism here to make sure this endpoint is only accessible to authorized users.
 router.get('/token', (req, res) => tokenHandler(req, res));
@@ -43,12 +42,8 @@ router.post('/conference-events', Twilio.webhook({ protocol: 'https' }, authToke
   }
 });
 
-// Serve the RNNoise WASM + worklet assets from the package's dist folder.
-router.use(
-  '/web-noise-suppressor',
-  express.static(
-    path.join(process.cwd(), 'node_modules/@sapphi-red/web-noise-suppressor/dist')
-  )
-);
+// The Krisp SDK library (krispsdk.mjs) and NC models live in public/krisp/ and
+// are served by the auto-discovery static mount in src/server.js, so no extra
+// static mount is needed here.
 
 export default router;
