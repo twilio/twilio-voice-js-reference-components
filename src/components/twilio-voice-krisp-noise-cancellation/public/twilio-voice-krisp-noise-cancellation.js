@@ -1,32 +1,36 @@
-import KrispSDK from '/twilio-voice-krisp-noise-cancellation/krisp/krispsdk.mjs';
-
 const BASE = '/twilio-voice-krisp-noise-cancellation/krisp';
 
-// One KrispSDK instance is constructed and init()'d once, shared by every
+// The Krisp SDK is imported, constructed, and init()'d once, shared by every
 // processor. Kept in a module-scoped promise so concurrent toggles await the
-// same init; cleared on failure so a later toggle retries.
+// same init; cleared on failure so a later toggle retries. The import is dynamic
+// (not a top-level import) so a missing SDK file -- the Krisp assets are
+// gitignored / user-provided -- surfaces as a caught toggle error instead of
+// failing this module at load time and leaving the custom element undefined.
 let krispSdkPromise;
 
 function getKrispSDK() {
   if (!krispSdkPromise) {
-    const sdk = new KrispSDK({
-      params: {
-        // Outbound (microphone) models.
-        models: {
-          model8: `${BASE}/models/krisp-nc-o-nb-v2.kef`,
-          modelNC: `${BASE}/models/krisp-nc-o-med-v7.kef`,
-        },
-        // Inbound (incoming audio) models. Key names must be model_inbound_8 /
-        // model_inbound_16 (the SDK does not recognize model8/model16 here).
-        inboundModels: {
-          model_inbound_8: `${BASE}/models/krisp-nc-i-nb-pro-v1.kef`,
-          model_inbound_16: `${BASE}/models/krisp-nc-i-wb-pro-v3.kef`,
-        },
-      },
-    });
-    krispSdkPromise = sdk
-      .init()
-      .then(() => sdk)
+    krispSdkPromise = import(`${BASE}/krispsdk.mjs`)
+      .then(({ default: KrispSDK }) => {
+        if (!KrispSDK.isSupported()) {
+          throw new Error('Krisp SDK is not supported in this browser.');
+        }
+        const sdk = new KrispSDK({
+          params: {
+            // Outbound (mic) runs at 48 kHz, so Krisp uses the full-band model.
+            models: {
+              modelNC: `${BASE}/models/krisp-nc-o-med-v7.kef`,
+            },
+            // Inbound (incoming) runs at 16 kHz, so Krisp uses the wideband
+            // inbound model. The key must be model_inbound_16 (the SDK does not
+            // recognize model16 here).
+            inboundModels: {
+              model_inbound_16: `${BASE}/models/krisp-nc-i-wb-pro-v3.kef`,
+            },
+          },
+        });
+        return sdk.init().then(() => sdk);
+      })
       .catch((error) => {
         krispSdkPromise = undefined;
         throw error;
@@ -39,15 +43,14 @@ function getKrispSDK() {
  * Implements the Voice SDK's AudioProcessor interface. The SDK calls
  * createProcessedStream whenever the underlying input/output stream is
  * (re)initialized, and destroyProcessedStream once it is torn down. One
- * instance is used per direction (local mic / remote output). The isInbound
- * flag selects the Krisp model set: false uses the outbound models, true uses
- * the inbound models.
+ * instance is used per direction (local mic / remote incoming).
  *
- * Krisp picks a model by the AudioContext sample rate (model8 <= 8 kHz,
- * model16 <= 16 kHz, full band > 16 kHz), so each direction runs its own
- * context at a rate its models cover: 48 kHz for outbound (full-band model),
- * 16 kHz for inbound. Krisp ships no full-band inbound model -- the inbound
- * models top out at wideband -- so the inbound filter must run at 16 kHz.
+ * Krisp selects its model from the AudioContext sample rate and the isInbound
+ * flag: the mic runs at 48 kHz with the full-band outbound model, and the
+ * incoming audio runs at 16 kHz with Krisp's wideband inbound model (Krisp
+ * ships no full-band inbound model). The incoming stream is also sunk to a
+ * media element (see createProcessedStream), because a remote WebRTC track
+ * otherwise yields no Web Audio samples in Chrome.
  *
  * Audio graph:
  *   stream -> MediaStreamAudioSourceNode -> Krisp AudioFilterNode
@@ -59,6 +62,7 @@ class KrispProcessor {
   #source;
   #node;
   #destination;
+  #sink;
 
   constructor(isInbound) {
     this.#isInbound = isInbound;
@@ -72,21 +76,40 @@ class KrispProcessor {
 
     const sdk = await getKrispSDK();
 
-    // Do all node work synchronously after the awaits so a destroy that runs
-    // during setup can't null a field. Bind to a local `node` so the ready
-    // callback enables this exact filter, not a later one.
-    const node = await sdk.createNoiseFilter(
-      { audioContext: this.#ctx, stream, isInbound: this.#isInbound },
-      () => node.enable(), // filter starts disabled; enable once its model loads
-    );
-    const source = new MediaStreamAudioSourceNode(this.#ctx, { mediaStream: stream });
-    const destination = this.#ctx.createMediaStreamDestination();
-    source.connect(node);
-    node.connect(destination);
+    // enableOnceReady lets the filter enable itself once its model has loaded, so
+    // there's no ready callback to wire up. The rest is synchronous after the
+    // awaits so a destroy that runs during setup can't null a field.
+    this.#node = await sdk.createNoiseFilter({
+      audioContext: this.#ctx,
+      stream,
+      isInbound: this.#isInbound,
+      enableOnceReady: true,
+    });
+    // Model load / sample-rate failures are reported on the node (e.data.errorCode
+    // is e.g. MODEL_URL_FETCH_ERROR / MODEL_LOAD_ERROR / SAMPLING_RATE_NOT_SUPPORTED),
+    // not through this promise, so they never reach the toggle try/catch.
+    this.#node.addEventListener('error', (e) => {
+      const direction = this.#isInbound ? 'inbound' : 'outbound';
+      console.error(
+        `Krisp ${direction} noise filter error:`,
+        e.data?.errorCode,
+        e.data?.errorMessage,
+      );
+    });
+    // Chrome produces no Web Audio samples from a remote WebRTC track unless the
+    // stream is also sunk to a media element (the mic path pumps on its own).
+    // This mirrors Krisp's own inbound reference app (inboundCallingApp): a muted
+    // `new Audio()` on the incoming stream alongside the source node.
+    if (this.#isInbound) {
+      this.#sink = new Audio();
+      this.#sink.srcObject = stream;
+      this.#sink.muted = true;
+      this.#sink.play().catch(() => {});
+    }
+    this.#source = new MediaStreamAudioSourceNode(this.#ctx, { mediaStream: stream });
+    this.#destination = this.#ctx.createMediaStreamDestination();
 
-    this.#source = source;
-    this.#node = node;
-    this.#destination = destination;
+    this.#source.connect(this.#node).connect(this.#destination);
     return this.#destination.stream;
   }
 
@@ -96,6 +119,11 @@ class KrispProcessor {
     this.#destination?.disconnect();
     // Terminates the Krisp worker backing this filter node.
     await this.#node?.dispose();
+    if (this.#sink) {
+      this.#sink.pause();
+      this.#sink.srcObject = null;
+      this.#sink = null;
+    }
     this.#source = this.#node = this.#destination = null;
   }
 }
@@ -113,6 +141,12 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     const twilioVoiceDialer = this.shadowRoot.host.parentElement;
     twilioVoiceDialer.addEventListener('device', (e) => {
       this.#device = e.detail.device;
+      // Disable the browser's own noise suppression on the outgoing mic so it
+      // doesn't run in series with Krisp (double-processing). Applies to the
+      // input device only; the inbound path isn't from getUserMedia.
+      this.#device.audio
+        .setAudioConstraints({ noiseSuppression: false })
+        .catch((error) => console.error('Failed to set audio constraints:', error));
     });
 
     this.shadowRoot

@@ -90,3 +90,5 @@ npm start
 - Krisp Noise Cancellation: [http://localhost:3030/twilio-voice-krisp-noise-cancellation?identity=bob](http://localhost:3030/twilio-voice-krisp-noise-cancellation?identity=bob).
 
 > **Krisp Noise Cancellation setup:** The Krisp SDK library and models are proprietary and not committed to this repo. Before using this component, download `@krispai/javascript-sdk` (v2.3.9) and its NC models from the [Krisp SDK Portal](https://sdk.krisp.ai) and place them in `src/components/twilio-voice-krisp-noise-cancellation/public/krisp/`. See that folder's `README.md` for the exact file layout.
+>
+> The component sets `audioConstraints: { noiseSuppression: false }` on the Device so the browser's built-in noise suppression doesn't run in series with Krisp on the outgoing microphone. Adjust this in `twilio-voice-krisp-noise-cancellation.js` if you need different input constraints (e.g. `echoCancellation`, `autoGainControl`).

@@ -14,12 +14,11 @@ This reference component was built against **`@krispai/javascript-sdk` v2.3.9**
 public/krisp/
   krispsdk.mjs                        # from the SDK's dist/krispsdk.mjs
   models/
-    krisp-nc-o-nb-v2.kef              # outbound, narrowband  (model8)
-    krisp-nc-o-med-v7.kef             # outbound, wideband     (modelNC)
-    krisp-nc-i-nb-pro-v1.kef          # inbound,  narrowband  (model8)
-    krisp-nc-i-wb-pro-v3.kef          # inbound,  wideband     (model16)
+    krisp-nc-o-med-v7.kef             # full-band outbound model (modelNC), 48 kHz mic
+    krisp-nc-i-wb-pro-v3.kef          # wideband inbound model (model_inbound_16), 16 kHz incoming
 ```
 
-The model → file mapping is configured in
+The mic runs at 48 kHz (full-band outbound model) and incoming audio runs at
+16 kHz (wideband inbound model). The model → file mapping is configured in
 `../twilio-voice-krisp-noise-cancellation.js` (`getKrispSDK()`). If you ship
 different model files, update the URLs there to match.
