@@ -3,8 +3,8 @@ const BASE = '/twilio-voice-krisp-noise-cancellation/krisp';
 // The Krisp SDK is imported, constructed, and init()'d once, shared by every
 // processor. Kept in a module-scoped promise so concurrent toggles await the
 // same init; cleared on failure so a later toggle retries. The import is dynamic
-// (not a top-level import) so a missing SDK file -- the Krisp assets are
-// gitignored / user-provided -- surfaces as a caught toggle error instead of
+// (not a top-level import) so that a missing SDK file (the Krisp assets are
+// gitignored and user-provided) surfaces as a caught toggle error instead of
 // failing this module at load time and leaving the custom element undefined.
 let krispSdkPromise;
 
@@ -97,9 +97,8 @@ class KrispProcessor {
       );
     });
     // Chrome produces no Web Audio samples from a remote WebRTC track unless the
-    // stream is also sunk to a media element (the mic path pumps on its own).
-    // This mirrors Krisp's own inbound reference app (inboundCallingApp): a muted
-    // `new Audio()` on the incoming stream alongside the source node.
+    // stream is also sunk to a media element (the mic path pumps on its own), so
+    // keep a muted `new Audio()` on the incoming stream alongside the source node.
     if (this.#isInbound) {
       this.#sink = new Audio();
       this.#sink.srcObject = stream;
@@ -150,11 +149,11 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     });
 
     this.shadowRoot
-      .querySelector('#denoise-local')
-      .addEventListener('change', (e) => this.#toggleLocal(e.target.checked));
+      .querySelector('#denoise-local-checkbox')
+      .addEventListener('change', (e) => this.#onLocalChange(e.target.checked));
     this.shadowRoot
-      .querySelector('#denoise-remote')
-      .addEventListener('change', (e) => this.#toggleRemote(e.target.checked));
+      .querySelector('#denoise-remote-checkbox')
+      .addEventListener('change', (e) => this.#onRemoteChange(e.target.checked));
   }
 
   #setChecked(selector, checked) {
@@ -162,10 +161,10 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     if (checkbox) checkbox.checked = checked;
   }
 
-  async #toggleLocal(on) {
+  async #onLocalChange(on) {
     if (!this.#device) {
       console.warn('Device not ready yet.');
-      this.#setChecked('#denoise-local', false);
+      this.#setChecked('#denoise-local-checkbox', false);
       return;
     }
     try {
@@ -181,14 +180,14 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     } catch (error) {
       console.error('Failed to toggle local noise cancellation:', error);
       // The toggle didn't take effect; don't let the checkbox misrepresent state.
-      this.#setChecked('#denoise-local', !on);
+      this.#setChecked('#denoise-local-checkbox', !on);
     }
   }
 
-  async #toggleRemote(on) {
+  async #onRemoteChange(on) {
     if (!this.#device) {
       console.warn('Device not ready yet.');
-      this.#setChecked('#denoise-remote', false);
+      this.#setChecked('#denoise-remote-checkbox', false);
       return;
     }
     try {
@@ -204,7 +203,7 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     } catch (error) {
       console.error('Failed to toggle remote noise cancellation:', error);
       // The toggle didn't take effect; don't let the checkbox misrepresent state.
-      this.#setChecked('#denoise-remote', !on);
+      this.#setChecked('#denoise-remote-checkbox', !on);
     }
   }
 
@@ -212,10 +211,10 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <div id="noise-cancellation">
         <label>
-          <input type="checkbox" id="denoise-local" /> Denoise microphone
+          <input type="checkbox" id="denoise-local-checkbox" /> Denoise microphone
         </label>
         <label>
-          <input type="checkbox" id="denoise-remote" /> Denoise incoming audio
+          <input type="checkbox" id="denoise-remote-checkbox" /> Denoise incoming audio
         </label>
       </div>
     `;

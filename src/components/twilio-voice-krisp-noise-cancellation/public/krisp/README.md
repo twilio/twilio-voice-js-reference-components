@@ -19,6 +19,6 @@ public/krisp/
 ```
 
 The mic runs at 48 kHz (full-band outbound model) and incoming audio runs at
-16 kHz (wideband inbound model). The model → file mapping is configured in
+16 kHz (wideband inbound model). The model -> file mapping is configured in
 `../twilio-voice-krisp-noise-cancellation.js` (`getKrispSDK()`). If you ship
 different model files, update the URLs there to match.
