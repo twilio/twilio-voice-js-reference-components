@@ -103,7 +103,9 @@ class KrispProcessor {
       this.#sink = new Audio();
       this.#sink.srcObject = stream;
       this.#sink.muted = true;
-      this.#sink.play().catch(() => {});
+      this.#sink
+        .play()
+        .catch((error) => console.warn('Krisp inbound sink autoplay was blocked:', error));
     }
     this.#source = new MediaStreamAudioSourceNode(this.#ctx, { mediaStream: stream });
     this.#destination = this.#ctx.createMediaStreamDestination();
@@ -140,11 +142,11 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     const twilioVoiceDialer = this.shadowRoot.host.parentElement;
     twilioVoiceDialer.addEventListener('device', (e) => {
       this.#device = e.detail.device;
-      // Disable the browser's own noise suppression on the outgoing mic so it
-      // doesn't run in series with Krisp (double-processing). Applies to the
-      // input device only; the inbound path isn't from getUserMedia.
+      // Disable the browser's own noise suppression and gain control on the
+      // outgoing mic so they don't run in series with Krisp (double-processing).
+      // Applies to the input device only; the inbound path isn't from getUserMedia.
       this.#device.audio
-        .setAudioConstraints({ noiseSuppression: false })
+        .setAudioConstraints({ noiseSuppression: false, autoGainControl: false })
         .catch((error) => console.error('Failed to set audio constraints:', error));
     });
 
