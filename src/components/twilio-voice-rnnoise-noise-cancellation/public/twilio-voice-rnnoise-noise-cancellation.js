@@ -5,8 +5,23 @@ import {
 
 const BASE = '/twilio-voice-rnnoise-noise-cancellation/web-noise-suppressor';
 
-// The RNNoise WASM binary is fetched once and shared by every processor.
+// The RNNoise WASM binary is fetched once and shared by every processor. Clearing
+// the cache on failure lets a later toggle retry instead of staying broken until a
+// page reload.
 let wasmBinaryPromise;
+
+function loadRnnoiseOnce() {
+  if (!wasmBinaryPromise) {
+    wasmBinaryPromise = loadRnnoise({
+      url: `${BASE}/rnnoise.wasm`,
+      simdUrl: `${BASE}/rnnoise_simd.wasm`,
+    }).catch((error) => {
+      wasmBinaryPromise = undefined;
+      throw error;
+    });
+  }
+  return wasmBinaryPromise;
+}
 
 // The worklet module only needs to be registered once per AudioContext.
 const workletAddedFor = new WeakSet();
@@ -23,12 +38,15 @@ const workletAddedFor = new WeakSet();
  */
 class RnnoiseProcessor {
   #ctx;
+  #isRemote;
   #source;
   #node;
   #destination;
+  #sink;
 
-  constructor(audioContext) {
+  constructor(audioContext, isRemote) {
     this.#ctx = audioContext;
+    this.#isRemote = isRemote;
   }
 
   async createProcessedStream(stream) {
@@ -36,22 +54,22 @@ class RnnoiseProcessor {
     // the previous graph first so we don't leak worklet nodes / RNNoise WASM heap.
     await this.destroyProcessedStream();
 
-    if (!wasmBinaryPromise) {
-      // Clear the cache on failure so a later toggle retries; otherwise a single
-      // transient fetch error disables noise cancellation until a page reload.
-      wasmBinaryPromise = loadRnnoise({
-        url: `${BASE}/rnnoise.wasm`,
-        simdUrl: `${BASE}/rnnoise_simd.wasm`,
-      }).catch((error) => {
-        wasmBinaryPromise = undefined;
-        throw error;
-      });
-    }
-    const wasmBinary = await wasmBinaryPromise;
+    const wasmBinary = await loadRnnoiseOnce();
 
     if (!workletAddedFor.has(this.#ctx)) {
       await this.#ctx.audioWorklet.addModule(`${BASE}/rnnoise/workletProcessor.js`);
       workletAddedFor.add(this.#ctx);
+    }
+
+    // Chrome produces no Web Audio samples from a remote WebRTC track unless the
+    // stream is also sunk to a media element (the mic path pumps on its own).
+    if (this.#isRemote) {
+      this.#sink = new Audio();
+      this.#sink.srcObject = stream;
+      this.#sink.muted = true;
+      this.#sink
+        .play()
+        .catch((error) => console.warn('RNNoise inbound sink autoplay was blocked:', error));
     }
 
     this.#source = new MediaStreamAudioSourceNode(this.#ctx, { mediaStream: stream });
@@ -69,11 +87,16 @@ class RnnoiseProcessor {
     this.#destination?.disconnect();
     // Frees the RNNoise WASM state held by the worklet.
     this.#node?.destroy();
+    if (this.#sink) {
+      this.#sink.pause();
+      this.#sink.srcObject = null;
+      this.#sink = null;
+    }
     this.#source = this.#node = this.#destination = null;
   }
 }
 
-class TwilioVoiceNoiseCancellation extends HTMLElement {
+class TwilioVoiceRnnoiseNoiseCancellation extends HTMLElement {
   #device;
   #audioContext;
   #localProcessor;
@@ -87,6 +110,12 @@ class TwilioVoiceNoiseCancellation extends HTMLElement {
     const twilioVoiceDialer = this.shadowRoot.host.parentElement;
     twilioVoiceDialer.addEventListener('device', (e) => {
       this.#device = e.detail.device;
+      // Disable the browser's own noise suppression and gain control on the
+      // outgoing mic so they don't run in series with RNNoise (double-processing).
+      // Applies to the input device only; the inbound path isn't from getUserMedia.
+      this.#device.audio
+        .setAudioConstraints({ noiseSuppression: false, autoGainControl: false })
+        .catch((error) => console.error('Failed to set audio constraints:', error));
     });
 
     this.shadowRoot
@@ -104,37 +133,54 @@ class TwilioVoiceNoiseCancellation extends HTMLElement {
     return this.#audioContext;
   }
 
+  #setChecked(selector, checked) {
+    const checkbox = this.shadowRoot.querySelector(selector);
+    if (checkbox) checkbox.checked = checked;
+  }
+
   async #onLocalChange(on) {
     if (!this.#device) {
       console.warn('Device not ready yet.');
+      this.#setChecked('#denoise-local-checkbox', false);
       return;
     }
     try {
-      this.#localProcessor ??= new RnnoiseProcessor(this.#getAudioContext());
+      this.#localProcessor ??= new RnnoiseProcessor(this.#getAudioContext(), false);
       if (on) {
+        // Pre-warm the WASM so a load failure surfaces here (and reverts the
+        // checkbox below) instead of only as a swallowed async rejection later.
+        await loadRnnoiseOnce();
         await this.#device.audio.addProcessor(this.#localProcessor, false);
       } else {
         await this.#device.audio.removeProcessor(this.#localProcessor, false);
       }
     } catch (error) {
       console.error('Failed to toggle local noise cancellation:', error);
+      // The toggle didn't take effect; don't let the checkbox misrepresent state.
+      this.#setChecked('#denoise-local-checkbox', !on);
     }
   }
 
   async #onRemoteChange(on) {
     if (!this.#device) {
       console.warn('Device not ready yet.');
+      this.#setChecked('#denoise-remote-checkbox', false);
       return;
     }
     try {
-      this.#remoteProcessor ??= new RnnoiseProcessor(this.#getAudioContext());
+      this.#remoteProcessor ??= new RnnoiseProcessor(this.#getAudioContext(), true);
       if (on) {
+        // Pre-warm the WASM so a load failure surfaces here (and reverts the
+        // checkbox below) instead of only as a swallowed async rejection later.
+        await loadRnnoiseOnce();
         await this.#device.audio.addProcessor(this.#remoteProcessor, true);
       } else {
         await this.#device.audio.removeProcessor(this.#remoteProcessor, true);
       }
     } catch (error) {
       console.error('Failed to toggle remote noise cancellation:', error);
+      // The toggle didn't take effect; don't let the checkbox misrepresent state.
+      this.#setChecked('#denoise-remote-checkbox', !on);
     }
   }
 
@@ -154,5 +200,5 @@ class TwilioVoiceNoiseCancellation extends HTMLElement {
 
 customElements.define(
   'twilio-voice-rnnoise-noise-cancellation',
-  TwilioVoiceNoiseCancellation
+  TwilioVoiceRnnoiseNoiseCancellation
 );
