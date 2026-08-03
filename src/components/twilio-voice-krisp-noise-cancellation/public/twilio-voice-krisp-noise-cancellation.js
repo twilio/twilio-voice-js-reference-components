@@ -142,12 +142,6 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
     const twilioVoiceDialer = this.shadowRoot.host.parentElement;
     twilioVoiceDialer.addEventListener('device', (e) => {
       this.#device = e.detail.device;
-      // Disable the browser's own noise suppression and gain control on the
-      // outgoing mic so they don't run in series with Krisp (double-processing).
-      // Applies to the input device only; the inbound path isn't from getUserMedia.
-      this.#device.audio
-        .setAudioConstraints({ noiseSuppression: false, autoGainControl: false })
-        .catch((error) => console.error('Failed to set audio constraints:', error));
     });
 
     this.shadowRoot
@@ -175,8 +169,12 @@ class TwilioVoiceKrispNoiseCancellation extends HTMLElement {
         // Pre-warm the SDK so an init/load failure surfaces here (and reverts the
         // checkbox below) instead of only as a swallowed async rejection later.
         await getKrispSDK();
+        // Disable the browser's own NS/AGC only while denoising the mic, so they
+        // don't run in series with Krisp. Reverted when denoise is turned off.
+        await this.#device.audio.setAudioConstraints({ noiseSuppression: false, autoGainControl: false });
         await this.#device.audio.addProcessor(this.#localProcessor, false);
       } else {
+        await this.#device.audio.unsetAudioConstraints();
         await this.#device.audio.removeProcessor(this.#localProcessor, false);
       }
     } catch (error) {
